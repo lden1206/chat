@@ -5,62 +5,137 @@ from zalo_bot.ext import Dispatcher, MessageHandler, filters
 import json
 import os
 import difflib
+import random 
 
 app = Flask(__name__)
-TOKEN = "2195711801638941102:eZWDRFTEXPKJbpYEiCOBPDcQZwDqQNWGNOqRPeQtSgeLaBDGMmBVAVnhWoVakDbL" 
+
+
+TOKEN = "2195711801638941102:eZWDRFTEXPKJbpYEiCOBPDcQZwDqQNWGNOqRPeQtSgeLaBDGMmBVAVnhWoVakDbL"
 bot = Bot(token=TOKEN)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DICT_PATH = os.path.join(BASE_DIR, "medictdata.json")
 
+
 def norm_text(s: str) -> str:
-    if not s:
-        return ""
+    if not s: return ""
     return " ".join(s.lower().strip().split())
 
 def load_mechanical_dict(path: str) -> dict:
     if not os.path.exists(path):
-        # Trả về dict rỗng để code không chết nếu thiếu file
-        print(f"Cảnh báo: Không tìm thấy {path}") 
         return {}
-
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
-    
     return {norm_text(k): v for k, v in data.items()}
 
 MECHANICAL_DICT = load_mechanical_dict(DICT_PATH)
-DICT_KEYS = list(MECHANICAL_DICT.keys()) # <--- Tạo danh sách key để tra cứu nhanh
+DICT_KEYS = list(MECHANICAL_DICT.keys())
+
+USER_STATES = {} 
+
+def format_word_response(word, item):
+    # 1. Xử lý POS (Theo yêu cầu của bạn)
+    raw_pos = item.get('pos', '')
+    if not raw_pos:
+        pos_str = ""
+    else:
+        pos_str = f"({raw_pos})"
+
+    return (
+        f"🔤 {word.upper()} {pos_str}\n"  # Ví dụ: HELLO (Noun)
+        f"🗣️ {item.get('ipa', '')}\n"
+        f"🇻🇳 Nghĩa: {item.get('meaning_vi', '')}\n\n"
+        f"Ví dụ: \n"
+        f"🏴󠁧󠁢󠁥󠁮󠁧󠁿 {item.get('example_en', '')}\n"
+        f"🇻🇳 {item.get('example_vi', '')}\n"
+        f"(📚 Bài {item.get('lesson', '')} - Sách {item.get('book', '')})"
+    )
 
 async def handle_message(update: Update, context):
     if not getattr(update, "message", None) or not getattr(update.message, "text", None):
         return
 
+    user_id = update.message.from_id  # Lấy ID người gửi để lưu trạng thái
     raw = update.message.text
-    query = norm_text(raw)
+    text_lower = norm_text(raw)
 
+    if text_lower == "quiz":
+        USER_STATES[user_id] = "WAITING_QUIZ_TYPE"
+        await update.message.reply_text(
+            "🧠 BẠN MUỐN LÀM QUIZ GÌ?\n\n"
+            "1️⃣. Ngẫu nhiên (tất cả các từ)\n"
+            "2️⃣. Theo bài học (Lesson)\n\n"
+            "👉 Hãy chat số '1' hoặc '2' để chọn."
+        )
+        return
+
+
+    if user_id in USER_STATES:
+        state = USER_STATES[user_id]
+
+        if state == "WAITING_QUIZ_TYPE":
+            if "1" in text_lower or "ngẫu nhiên" in text_lower:
+                # Random toàn bộ
+                random_word = random.choice(DICT_KEYS)
+                item = MECHANICAL_DICT[random_word]
+                response = "🎲 TỪ NGẪU NHIÊN CHO BẠN:\n\n" + format_word_response(random_word, item)
+                del USER_STATES[user_id] # Xóa trạng thái để quay về tra từ
+                
+            elif "2" in text_lower or "lesson" in text_lower:
+                USER_STATES[user_id] = "WAITING_LESSON_NUM"
+                response = "📚 Bạn muốn ôn tập Lesson số mấy? (Nhập số)"
+            
+            else:
+                response = "⚠️ Vui lòng chọn '1' hoặc '2'. Hoặc gõ 'huy' để thoát."
+                if text_lower == "huy":
+                    del USER_STATES[user_id]
+                    response = "Đã hủy chế độ Quiz."
+
+            await update.message.reply_text(response)
+            return
+
+
+        elif state == "WAITING_LESSON_NUM":
+            try:
+                # Tìm các từ thuộc lesson này
+                target_lesson = str(int(text_lower)) # Thử ép kiểu số để lọc rác
+                filtered_words = [
+                    k for k, v in MECHANICAL_DICT.items() 
+                    if str(v.get('lesson', '')) == target_lesson
+                ]
+
+                if filtered_words:
+                    random_word = random.choice(filtered_words)
+                    item = MECHANICAL_DICT[random_word]
+                    response = f"📚 TỪ NGẪU NHIÊN (LESSON {target_lesson}):\n\n" + format_word_response(random_word, item)
+                else:
+                    response = f"❌ Không tìm thấy từ vựng nào trong Lesson {target_lesson}."
+                
+                del USER_STATES[user_id]
+            except ValueError:
+                response = "⚠️ Vui lòng nhập đúng con số (ví dụ: 1, 2, 5). Gõ 'huy' để thoát."
+                if text_lower == "huy":
+                    del USER_STATES[user_id]
+                    response = "Đã hủy."
+
+            await update.message.reply_text(response)
+            return
+
+    query = text_lower
     if query in MECHANICAL_DICT:
         item = MECHANICAL_DICT[query]
-        response = (
-            f"🔤 {query.upper()}\n"
-            f"/{item.get('ipa', '')}/\n\n"
-            f"🇻🇳 {item.get('meaning_vi', '')}\n\n"
-            f"📘 {item.get('example_en', '')}\n"
-            f"📙 {item.get('example_vi', '')}\n"
-            f"📚 Bài {item.get('lesson', '')} - Sách {item.get('book', '')}"
-        )
+        response = format_word_response(query, item)
     else:
-        # Logic gợi ý từ gần đúng
+        # Gợi ý từ
         suggestions = difflib.get_close_matches(query, DICT_KEYS, n=5, cutoff=0.5)
-        
         if suggestions:
-            suggest_text = "\n".join([f"• {s}" for s in suggestions])
+            list_str = "\n".join([f"• {s}" for s in suggestions])
             response = (
                 f"❌ Không tìm thấy '{raw}'.\n\n"
-                f"💡 Có thể bạn muốn tìm:\n{suggest_text}"
+                f"💡 Có thể bạn muốn tìm:\n{list_str}"
             )
         else:
-            response = f"Xin lỗi, mình không tìm thấy từ '{raw}' trong từ điển."
+            response = f"Xin lỗi, mình chưa có từ '{raw}'."
 
     await update.message.reply_text(response)
 
@@ -69,19 +144,16 @@ dispatcher.add_handler(MessageHandler(filters.TEXT, handle_message))
 
 @app.route("/")
 def index():
-    return "<h1>Bot Từ Điển đang hoạt động!</h1>"
+    return "<h1>Bot Dictionary V2 (Quiz + POS) is running!</h1>"
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
     payload = request.get_json(silent=True) or {}
+    if not payload: return "No payload", 400
     
-    if not payload:
-        return "No payload", 400
-        
     data = payload.get("result", payload)
     update = Update.de_json(data, bot)
 
-    # Chạy async an toàn
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:

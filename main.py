@@ -14,7 +14,6 @@ nest_asyncio.apply()
 app = Flask(__name__)
 
 # --- CẤU HÌNH ---
-# Lưu ý: Nên dùng biến môi trường để bảo mật Token
 TOKEN = "2195711801638941102:eZWDRFTEXPKJbpYEiCOBPDcQZwDqQNWGNOqRPeQtSgeLaBDGMmBVAVnhWoVakDbL"
 bot = Bot(token=TOKEN)
 
@@ -41,7 +40,6 @@ DICT_KEYS = list(MECHANICAL_DICT.keys())
 USER_STATES = {} 
 
 def format_word_response(word, item):
-    # Xử lý POS
     raw_pos = item.get('pos', '')
     pos_str = f"({raw_pos})" if raw_pos else ""
 
@@ -60,7 +58,14 @@ async def handle_message(update: Update, context):
     if not getattr(update, "message", None) or not getattr(update.message, "text", None):
         return
 
-    user_id = update.message.from_id
+    # --- [SỬA LỖI TẠI ĐÂY] ---
+    # Thay vì dùng from_id, ta dùng from_user.id
+    try:
+        user_id = update.message.from_user.id
+    except AttributeError:
+        # Fallback nếu thư viện thay đổi cấu trúc (phòng hờ)
+        user_id = getattr(update.message, 'user_id', 'unknown_user')
+    
     raw = update.message.text
     text_lower = norm_text(raw)
 
@@ -79,18 +84,16 @@ async def handle_message(update: Update, context):
     if user_id in USER_STATES:
         state = USER_STATES[user_id]
 
-        # Giai đoạn chọn loại Quiz
         if state == "WAITING_QUIZ_TYPE":
             if "1" in text_lower or "ngẫu nhiên" in text_lower:
                 random_word = random.choice(DICT_KEYS)
                 item = MECHANICAL_DICT[random_word]
                 response = "🎲 TỪ NGẪU NHIÊN CHO BẠN:\n\n" + format_word_response(random_word, item)
-                del USER_STATES[user_id] # Xóa trạng thái
+                del USER_STATES[user_id]
 
             elif "2" in text_lower or "lesson" in text_lower:
                 USER_STATES[user_id] = "WAITING_LESSON_NUM"
                 response = "📚 Bạn muốn ôn tập Lesson số mấy? (Nhập số)"
-                # Chưa xóa trạng thái, chờ nhập số
                 await update.message.reply_text(response)
                 return 
 
@@ -103,7 +106,6 @@ async def handle_message(update: Update, context):
             await update.message.reply_text(response)
             return
 
-        # Giai đoạn nhập số Lesson
         elif state == "WAITING_LESSON_NUM":
             try:
                 target_lesson = str(int(text_lower))
@@ -119,7 +121,7 @@ async def handle_message(update: Update, context):
                 else:
                     response = f"❌ Không tìm thấy từ vựng nào trong Lesson {target_lesson}."
                 
-                del USER_STATES[user_id] # Xong quiz, xóa trạng thái
+                del USER_STATES[user_id]
             
             except ValueError:
                 response = "⚠️ Vui lòng nhập đúng con số. Gõ 'huy' để thoát."
@@ -130,7 +132,7 @@ async def handle_message(update: Update, context):
             await update.message.reply_text(response)
             return
 
-    # 3. TRA TỪ ĐIỂN (Nếu không làm Quiz)
+    # 3. TRA TỪ ĐIỂN
     query = text_lower
     if query in MECHANICAL_DICT:
         item = MECHANICAL_DICT[query]
@@ -148,13 +150,13 @@ async def handle_message(update: Update, context):
 
     await update.message.reply_text(response)
 
-# --- THIẾT LẬP FLASK & DISPATCHER ---
+# --- THIẾT LẬP FLASK ---
 dispatcher = Dispatcher(bot, None, workers=0)
 dispatcher.add_handler(MessageHandler(filters.TEXT, handle_message))
 
 @app.route("/")
 def index():
-    return "<h1>Bot Dictionary V3 is running!</h1>"
+    return "<h1>Bot Dictionary V4 is running!</h1>"
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -164,7 +166,6 @@ def webhook():
     data = payload.get("result", payload)
     update = Update.de_json(data, bot)
 
-    # Logic async an toàn nhờ nest_asyncio
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     try:

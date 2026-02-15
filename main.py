@@ -7,34 +7,30 @@ import os
 
 app = Flask(__name__)
 
-TOKEN = "2195711801638941102:eZWDRFTEXPKJbpYEiCOBPDcQZwDqQNWGNOqRPeQtSgeLaBDGMmBVAVnhWoVakDbL"
+TOKEN = os.environ.get("ZALO_BOT_TOKEN", "2195711801638941102:eZWDRFTEXPKJbpYEiCOBPDcQZwDqQNWGNOqRPeQtSgeLaBDGMmBVAVnhWoVakDbL")
 bot = Bot(token=TOKEN)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DICT_PATH = os.path.join(BASE_DIR, "medictdata.json")
+DICT_PATH = os.path.join(BASE_DIR, "medictdata.json")  # ✅ root
 
 def norm_text(s: str) -> str:
-    """
-    Chuẩn hoá để tra từ ổn định:
-    - lower
-    - strip đầu/cuối
-    - gộp nhiều khoảng trắng thành 1
-    """
     if not s:
         return ""
     return " ".join(s.lower().strip().split())
 
 def load_mechanical_dict(path: str) -> dict:
+    # Không crash app nếu thiếu file, để service vẫn lên và bạn debug webhook
     if not os.path.exists(path):
-        raise FileNotFoundError(f"Không tìm thấy file từ điển: {path}")
+        print(f"[WARN] Missing dict file: {path}", flush=True)
+        return {}
 
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     if not isinstance(data, dict):
-        raise ValueError("File medictdata.json của bạn phải là dạng object/dict { 'word': {...} }")
+        print("[WARN] medictdata.json must be a dict/object", flush=True)
+        return {}
 
-    # Chuẩn hoá key (xử lý cả trường hợp key có khoảng trắng cuối như 'be on tv ')
     return {norm_text(k): v for k, v in data.items()}
 
 MECHANICAL_DICT = load_mechanical_dict(DICT_PATH)
@@ -43,8 +39,7 @@ async def handle_message(update: Update, context):
     if not getattr(update, "message", None) or not getattr(update.message, "text", None):
         return
 
-    raw = update.message.text
-    query = norm_text(raw)
+    query = norm_text(update.message.text)
 
     if query in MECHANICAL_DICT:
         item = MECHANICAL_DICT[query]
@@ -64,7 +59,7 @@ async def handle_message(update: Update, context):
 dispatcher = Dispatcher(bot, None, workers=0)
 dispatcher.add_handler(MessageHandler(filters.TEXT, handle_message))
 
-@app.route("/")
+@app.route("/", methods=["GET"])
 def index():
     return "<h1>Bot Từ Điển đang hoạt động!</h1>"
 
@@ -72,16 +67,9 @@ def index():
 def webhook():
     payload = request.get_json(force=True) or {}
     update = Update.de_json(payload.get("result", payload), bot)
-
-    # chạy async trong Flask sync route
-    try:
-        asyncio.run(dispatcher.process_update(update))
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(dispatcher.process_update(update))
-        loop.close()
-
+    asyncio.run(dispatcher.process_update(update))
     return "ok", 200
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8443)
+    port = int(os.environ.get("PORT", "8443"))  # ✅ Render dùng PORT
+    app.run(host="0.0.0.0", port=port)

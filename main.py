@@ -11,7 +11,7 @@ TOKEN = "ZALO_BOT_TOKEN_CUA_BAN"
 bot = Bot(token=TOKEN)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DICT_PATH = os.path.join(BASE_DIR, "chat", "medictdata.json")
+DICT_PATH = os.path.join(BASE_DIR, "medictdata.json")
 
 def norm_text(s: str) -> str:
     """

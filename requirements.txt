@@ -1,0 +1,5 @@
+flask
+requests
+gunicorn
+zalo_bot
+zalo_bot.ext

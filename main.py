@@ -7,7 +7,7 @@ import os
 
 app = Flask(__name__)
 
-TOKEN = "ZALO_BOT_TOKEN_CUA_BAN"
+TOKEN = "2195711801638941102:eZWDRFTEXPKJbpYEiCOBPDcQZwDqQNWGNOqRPeQtSgeLaBDGMmBVAVnhWoVakDbL"
 bot = Bot(token=TOKEN)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

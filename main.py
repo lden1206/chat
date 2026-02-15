@@ -13,7 +13,7 @@ bot = Bot(token=TOKEN)
 
 # --- LOGIC TRA TỪ ĐIỂN ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-fpath = os.path.join(BASE_DIR, "medictdata_o.json")
+fpath = os.path.join(BASE_DIR, "medictdata.json")
 
 with open(fpath, "r", encoding="utf-8") as f:
     MECHANICAL_DICT = json.load(f)

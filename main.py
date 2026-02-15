@@ -1,6 +1,6 @@
 from flask import Flask, request
 import asyncio
-import nest_asyncio 
+import nest_asyncio
 from zalo_bot import Bot, Update
 from zalo_bot.ext import Dispatcher, MessageHandler, filters
 import json
@@ -8,7 +8,7 @@ import os
 import difflib
 import random
 
-# --- FIX LỖI EVENT LOOP ---
+# --- 1. SỬA LỖI LOOP TRÊN SERVER ---
 nest_asyncio.apply()
 
 app = Flask(__name__)
@@ -37,7 +37,7 @@ MECHANICAL_DICT = load_mechanical_dict(DICT_PATH)
 DICT_KEYS = list(MECHANICAL_DICT.keys())
 
 # Biến lưu trạng thái người dùng
-USER_STATES = {} 
+USER_STATES = {}
 
 def format_word_response(word, item):
     raw_pos = item.get('pos', '')
@@ -58,18 +58,21 @@ async def handle_message(update: Update, context):
     if not getattr(update, "message", None) or not getattr(update.message, "text", None):
         return
 
-    # --- [SỬA LỖI TẠI ĐÂY] ---
-    # Thay vì dùng from_id, ta dùng from_user.id
+    # --- 2. SỬA LỖI LẤY ID NGƯỜI DÙNG ---
+    # Thư viện Zalo Bot thường để ID trong from_user.id hoặc user_id
     try:
-        user_id = update.message.from_user.id
-    except AttributeError:
-        # Fallback nếu thư viện thay đổi cấu trúc (phòng hờ)
-        user_id = getattr(update.message, 'user_id', 'unknown_user')
+        if hasattr(update.message, 'from_user') and update.message.from_user:
+            user_id = update.message.from_user.id
+        else:
+            # Fallback (phòng trường hợp cấu trúc object khác)
+            user_id = getattr(update.message, 'user_id', 'unknown_id')
+    except Exception:
+        user_id = 'unknown_id'
     
     raw = update.message.text
     text_lower = norm_text(raw)
 
-    # 1. BẮT ĐẦU QUIZ
+    # --- LOGIC QUIZ ---
     if text_lower == "quiz":
         USER_STATES[user_id] = "WAITING_QUIZ_TYPE"
         await update.message.reply_text(
@@ -80,7 +83,7 @@ async def handle_message(update: Update, context):
         )
         return
 
-    # 2. XỬ LÝ KHI ĐANG TRONG TRẠNG THÁI QUIZ
+    # XỬ LÝ KHI ĐANG TRONG TRẠNG THÁI QUIZ
     if user_id in USER_STATES:
         state = USER_STATES[user_id]
 
@@ -95,7 +98,7 @@ async def handle_message(update: Update, context):
                 USER_STATES[user_id] = "WAITING_LESSON_NUM"
                 response = "📚 Bạn muốn ôn tập Lesson số mấy? (Nhập số)"
                 await update.message.reply_text(response)
-                return 
+                return
 
             else:
                 response = "⚠️ Vui lòng chọn '1' hoặc '2'. Hoặc gõ 'huy' để thoát."
@@ -110,7 +113,7 @@ async def handle_message(update: Update, context):
             try:
                 target_lesson = str(int(text_lower))
                 filtered_words = [
-                    k for k, v in MECHANICAL_DICT.items() 
+                    k for k, v in MECHANICAL_DICT.items()
                     if str(v.get('lesson', '')) == target_lesson
                 ]
 
@@ -132,7 +135,7 @@ async def handle_message(update: Update, context):
             await update.message.reply_text(response)
             return
 
-    # 3. TRA TỪ ĐIỂN
+    # --- TRA TỪ ĐIỂN ---
     query = text_lower
     if query in MECHANICAL_DICT:
         item = MECHANICAL_DICT[query]
@@ -156,7 +159,7 @@ dispatcher.add_handler(MessageHandler(filters.TEXT, handle_message))
 
 @app.route("/")
 def index():
-    return "<h1>Bot Dictionary V4 is running!</h1>"
+    return "<h1>Bot Dictionary V5 is running!</h1>"
 
 @app.route("/webhook", methods=["POST"])
 def webhook():

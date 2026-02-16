@@ -56,23 +56,11 @@ async def handle_message(update: Update, context):
     raw = update.message.text
     text_lower = norm_text(raw)
 
-    # chat_id dùng để reply + lưu trạng thái
-    chat_id = getattr(getattr(update.message, "chat", None), "id", None)
-    if chat_id is None:
-        # Nếu không có chat.id thì không xử lý (tránh crash)
-        return
-    user_key = str(chat_id)
-
-    # Hủy mọi chế độ nếu gõ "huy"
-    if text_lower == "huy":
-        USER_STATES.pop(user_key, None)
-        await update.message.reply_text("Đã hủy.")
-        return
-
     # --- TRA TỪ ĐIỂN ---
     query = text_lower
     if query in MECHANICAL_DICT:
         item = MECHANICAL_DICT[query]
+        audio_url = f"{item.get("audio_url")}"
         response = format_word_response(query, item)
     else:
         suggestions = difflib.get_close_matches(query, DICT_KEYS, n=5, cutoff=0.5)
@@ -87,12 +75,10 @@ async def handle_message(update: Update, context):
 
     await update.message.reply_text(response)
 
-    audio_url = item.get("audio_url")
     if audio_url and audio_url.startswith("http"):
         try:
             # Lấy user_id của người gửi
-            user_id = update.effective_user.id
-            
+            user_id = update.message.sender.id            
             # Gọi trực tiếp từ đối tượng bot để gửi audio
             await bot.send_audio(
                 chat_id=user_id, 

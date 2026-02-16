@@ -149,7 +149,7 @@ async def handle_message(update: Update, context):
             response = f"Xin lỗi, mình chưa có từ '{raw}'."
 
     await update.message.reply_text(response)
-    await update.message.reply_audio(format_word_response(query, item)[1])
+    await bot.send_audio(chat_id=user_key, audio=format_word_response(query, item)[1])
 
 # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

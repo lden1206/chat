@@ -38,13 +38,14 @@ USER_STATES = {}
 
 def format_word_response(word, item):
     raw_pos = item.get("pos", "")
+    raw_audio = item.get("audio_url", "")
     pos_str = f"({raw_pos})" if raw_pos else ""
+    audio_str = f"({raw_audio})" if raw_audio else ""
     return (
-        f"🔤 {word.upper()} {pos_str}\n"
-        f"🗣️ {item.get('ipa', '')}\n"
-        f"🇻🇳 Nghĩa: {item.get('meaning_vi', '')}\n\n"
+        f"🔤 {word.upper()} {pos_str}: {item.get('meaning_vi', '')}\n"
+        f"🗣️ {item.get('ipa', '')} audio_str \n"
         f"Ví dụ: \n"
-        f"🏴 {item.get('example_en', '')}\n"
+        f"🇬🇧 {item.get('example_en', '')}\n"
         f"🇻🇳 {item.get('example_vi', '')}\n"
         f"(📚 Bài {item.get('lesson', '')} - Sách {item.get('book', '')})"
     )

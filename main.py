@@ -38,12 +38,10 @@ USER_STATES = {}
 
 def format_word_response(word, item):
     raw_pos = item.get("pos", "")
-    raw_audio = item.get("audio_url", "")
     pos_str = f"({raw_pos})" if raw_pos else ""
-    audio_str = f"({raw_audio})" if raw_audio else ""
     return (
         f"🔤 {word.upper()} {pos_str}: {item.get('meaning_vi', '')}\n"
-        f"🗣️ {item.get('ipa', '')} {audio_str} \n"
+        f"🗣️ {item.get('ipa', '')} \n"
         f"Ví dụ: \n"
         f"🇬🇧 {item.get('example_en', '')}\n"
         f"🇻🇳 {item.get('example_vi', '')}\n"
@@ -57,6 +55,20 @@ async def handle_message(update: Update, context):
 
     raw = update.message.text
     text_lower = norm_text(raw)
+
+    audio_url = item.get("audio_url")
+    if audio_url and audio_url.startswith("http"):
+        try:
+            # Lấy user_id của người gửi
+            user_id = update.effective_user.id
+            
+            # Gọi trực tiếp từ đối tượng bot để gửi audio
+            await bot.send_audio(
+                chat_id=user_id, 
+                audio=audio_url
+            )
+        except Exception as e:
+            print(f"Lỗi gửi audio: {audio_url}")
 
     # chat_id dùng để reply + lưu trạng thái
     chat_id = getattr(getattr(update.message, "chat", None), "id", None)

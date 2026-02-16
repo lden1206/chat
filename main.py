@@ -55,12 +55,13 @@ async def handle_message(update: Update, context):
 
     raw = update.message.text
     text_lower = norm_text(raw)
-
-    # --- TRA TỪ ĐIỂN ---
     query = text_lower
+
+    audio_url = ""
+
     if query in MECHANICAL_DICT:
         item = MECHANICAL_DICT[query]
-        audio_url = f"{item.get("audio_url")}"
+        audio_url = item.get("audio_url", "")
         response = format_word_response(query, item)
     else:
         suggestions = difflib.get_close_matches(query, DICT_KEYS, n=5, cutoff=0.5)
@@ -73,15 +74,14 @@ async def handle_message(update: Update, context):
         else:
             response = f"Xin lỗi, mình chưa có từ '{raw}'."
 
-    await update.message.reply_text(response)
+    user_id = update.message.sender.id
+
+    await bot.send_text(user_id, response)
 
     if audio_url and audio_url.startswith("http"):
         try:
-            # Lấy user_id của người gửi
-            user_id = update.message.sender.id            
-            # Gọi trực tiếp từ đối tượng bot để gửi audio
             await bot.send_audio(
-                chat_id=user_id, 
+                chat_id=user_id,
                 audio=audio_url
             )
         except Exception as e:

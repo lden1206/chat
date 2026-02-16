@@ -43,12 +43,12 @@ def format_word_response(word, item):
     audio_str = f"({raw_audio})" if raw_audio else ""
     return (
         f"🔤 {word.upper()} {pos_str}: {item.get('meaning_vi', '')}\n"
-        f"🗣️ {item.get('ipa', '')} {audio_str} \n"
+        f"🗣️ {item.get('ipa', '')} \n"
         f"Ví dụ: \n"
         f"🇬🇧 {item.get('example_en', '')}\n"
         f"🇻🇳 {item.get('example_vi', '')}\n"
         f"(📚 Bài {item.get('lesson', '')} - Sách {item.get('book', '')})"
-    )
+    ), audio_str
 
 # --- XỬ LÝ TIN NHẮN ---
 async def handle_message(update: Update, context):
@@ -148,7 +148,8 @@ async def handle_message(update: Update, context):
         else:
             response = f"Xin lỗi, mình chưa có từ '{raw}'."
 
-    await update.message.reply_text(response)
+    await update.message.reply_text(response[0])
+    await update.message.reply_audio(response[1])
 
 # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

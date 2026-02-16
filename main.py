@@ -43,7 +43,7 @@ def format_word_response(word, item):
     audio_str = f"({raw_audio})" if raw_audio else ""
     return (
         f"🔤 {word.upper()} {pos_str}: {item.get('meaning_vi', '')}\n"
-        f"🗣️ {item.get('ipa', '')} audio_str \n"
+        f"🗣️ {item.get('ipa', '')} {audio_str} \n"
         f"Ví dụ: \n"
         f"🇬🇧 {item.get('example_en', '')}\n"
         f"🇻🇳 {item.get('example_vi', '')}\n"

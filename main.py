@@ -48,7 +48,7 @@ def format_word_response(word, item):
         f"🇬🇧 {item.get('example_en', '')}\n"
         f"🇻🇳 {item.get('example_vi', '')}\n"
         f"(📚 Bài {item.get('lesson', '')} - Sách {item.get('book', '')})"
-    ), audio_str
+    )
 
 # --- XỬ LÝ TIN NHẮN ---
 async def handle_message(update: Update, context):
@@ -136,7 +136,7 @@ async def handle_message(update: Update, context):
     query = text_lower
     if query in MECHANICAL_DICT:
         item = MECHANICAL_DICT[query]
-        response = format_word_response(query, item)[0]
+        response = format_word_response(query, item)
     else:
         suggestions = difflib.get_close_matches(query, DICT_KEYS, n=5, cutoff=0.5)
         if suggestions:
@@ -149,7 +149,6 @@ async def handle_message(update: Update, context):
             response = f"Xin lỗi, mình chưa có từ '{raw}'."
 
     await update.message.reply_text(response)
-    await bot.send_audio(chat_id=user_key, audio=format_word_response(query, item)[1])
 
 # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

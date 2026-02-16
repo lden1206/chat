@@ -56,20 +56,6 @@ async def handle_message(update: Update, context):
     raw = update.message.text
     text_lower = norm_text(raw)
 
-    audio_url = item.get("audio_url")
-    if audio_url and audio_url.startswith("http"):
-        try:
-            # Lấy user_id của người gửi
-            user_id = update.effective_user.id
-            
-            # Gọi trực tiếp từ đối tượng bot để gửi audio
-            await bot.send_audio(
-                chat_id=user_id, 
-                audio=audio_url
-            )
-        except Exception as e:
-            print(f"Lỗi gửi audio: {audio_url}")
-
     # chat_id dùng để reply + lưu trạng thái
     chat_id = getattr(getattr(update.message, "chat", None), "id", None)
     if chat_id is None:
@@ -82,67 +68,6 @@ async def handle_message(update: Update, context):
         USER_STATES.pop(user_key, None)
         await update.message.reply_text("Đã hủy.")
         return
-
-    # --- LOGIC QUIZ ---
-    if text_lower == "quiz":
-        if not DICT_KEYS:
-            await update.message.reply_text("⚠️ Từ điển đang rỗng hoặc chưa load được medictdata.json.")
-            return
-        USER_STATES[user_key] = "WAITING_QUIZ_TYPE"
-        await update.message.reply_text(
-            "🧠 BẠN MUỐN LÀM QUIZ GÌ?\n\n"
-            "1️⃣. Ngẫu nhiên (tất cả các từ)\n"
-            "2️⃣. Theo bài học (Lesson)\n\n"
-            "👉 Hãy chat số '1' hoặc '2' để chọn. (Gõ 'huy' để thoát)"
-        )
-        return
-
-    # --- XỬ LÝ KHI ĐANG TRONG TRẠNG THÁI QUIZ ---
-    if user_key in USER_STATES:
-        state = USER_STATES[user_key]
-
-        if state == "WAITING_QUIZ_TYPE":
-            if "1" in text_lower or "ngẫu nhiên" in text_lower:
-                if not DICT_KEYS:
-                    response = "⚠️ Từ điển đang rỗng."
-                else:
-                    random_word = random.choice(DICT_KEYS)
-                    item = MECHANICAL_DICT[random_word]
-                    response = "🎲 TỪ NGẪU NHIÊN CHO BẠN:\n\n" + format_word_response(random_word, item)
-                USER_STATES.pop(user_key, None)
-                await update.message.reply_text(response)
-                return
-
-            if "2" in text_lower or "lesson" in text_lower:
-                USER_STATES[user_key] = "WAITING_LESSON_NUM"
-                await update.message.reply_text("📚 Bạn muốn ôn tập Lesson số mấy? (Nhập số)")
-                return
-
-            await update.message.reply_text("⚠️ Vui lòng chọn '1' hoặc '2'. (Gõ 'huy' để thoát)")
-            return
-
-        if state == "WAITING_LESSON_NUM":
-            try:
-                target_lesson = str(int(text_lower))
-                filtered_words = [
-                    k for k, v in MECHANICAL_DICT.items()
-                    if str(v.get("lesson", "")) == target_lesson
-                ]
-
-                if filtered_words:
-                    random_word = random.choice(filtered_words)
-                    item = MECHANICAL_DICT[random_word]
-                    response = f"📚 TỪ NGẪU NHIÊN (LESSON {target_lesson}):\n\n" + format_word_response(random_word, item)
-                else:
-                    response = f"❌ Không tìm thấy từ vựng nào trong Lesson {target_lesson}."
-
-                USER_STATES.pop(user_key, None)
-                await update.message.reply_text(response)
-                return
-
-            except ValueError:
-                await update.message.reply_text("⚠️ Vui lòng nhập đúng con số. (Gõ 'huy' để thoát)")
-                return
 
     # --- TRA TỪ ĐIỂN ---
     query = text_lower
@@ -161,6 +86,20 @@ async def handle_message(update: Update, context):
             response = f"Xin lỗi, mình chưa có từ '{raw}'."
 
     await update.message.reply_text(response)
+
+    audio_url = item.get("audio_url")
+    if audio_url and audio_url.startswith("http"):
+        try:
+            # Lấy user_id của người gửi
+            user_id = update.effective_user.id
+            
+            # Gọi trực tiếp từ đối tượng bot để gửi audio
+            await bot.send_audio(
+                chat_id=user_id, 
+                audio=audio_url
+            )
+        except Exception as e:
+            print(f"Lỗi gửi audio: {audio_url}")
 
 # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

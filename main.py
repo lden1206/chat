@@ -1,6 +1,6 @@
 from flask import Flask, request
 import asyncio
-from zalo_bot import Bot, Update, Message
+from zalo_bot import Bot, Update
 from zalo_bot.ext import Dispatcher, MessageHandler, filters
 import json
 import os
@@ -42,11 +42,9 @@ async def handle_message(update: Update, context):
     if query in MECHANICAL_DICT:
         item = MECHANICAL_DICT[query]
         raw_pos = item.get("pos", "")
-        raw_img = item.get("img_url", "")
         raw_audio = item.get("audio_url", "")
         pos_str = f"({raw_pos})" if raw_pos else ""
         audio_str = f"({raw_audio})" if raw_audio else ""
-        img_str = f"{raw_img}" if raw_img else ""
         response = (
         f"🔤 {word.upper()} {pos_str}: {item.get('meaning_vi', '')}\n"
         f"🗣️ {item.get('ipa', '')} {audio_str} \n"

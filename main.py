@@ -134,6 +134,7 @@ async def handle_message(update: Update, context):
 
     # --- TRA TỪ ĐIỂN ---
     query = text_lower
+    img = None
     if query in MECHANICAL_DICT:
         item = MECHANICAL_DICT[query]
         response = format_word_response(query, item)

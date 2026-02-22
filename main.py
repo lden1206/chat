@@ -149,7 +149,7 @@ async def handle_message(update: Update, context):
         else:
             response = f"Xin lỗi, mình chưa có từ '{raw}'."
 
-    await update.message.reply_photo(img)
+    await update.message.reply_text(response)
     #if img:
         #await update.message.reply_photo(photo=str(img))
 

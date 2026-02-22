@@ -85,15 +85,19 @@ def webhook():
     data = payload.get("result", payload)
     update = Update.de_json(data, bot)
 
-    # Chạy async an toàn
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(dispatcher.process_update(update))
-    finally:
-        loop.close()
+# ✅ CHẠY SYNC, KHÔNG TẠO EVENT LOOP, KHÔNG NEST_ASYNCIO
+    # Tùy version thư viện, 1 trong các cách dưới sẽ tồn tại:
+    if hasattr(dispatcher, "process_update_sync"):
+        dispatcher.process_update_sync(update)
+    elif hasattr(dispatcher, "application") and hasattr(dispatcher.application, "process_update_sync"):
+        dispatcher.application.process_update_sync(update)
+    else:
+        # fallback cuối cùng nếu thư viện chỉ có async
+        import asyncio
+        asyncio.run(dispatcher.process_update(update))
 
     return "ok", 200
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8443)
+    port = int(os.getenv("PORT", "10000"))
+    app.run(host="0.0.0.0", port=port)

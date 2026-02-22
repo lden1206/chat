@@ -45,7 +45,7 @@ def format_word_response(word, item):
     )
 
 # --- XỬ LÝ TIN NHẮN ---
-async def handle_message(update: Update, context):
+def handle_message(update: Update, context):
     if not getattr(update, "message", None) or not getattr(update.message, "text", None):
         return
 
@@ -69,11 +69,11 @@ async def handle_message(update: Update, context):
             )
         else:
             response = f"Xin lỗi, mình chưa có từ '{raw}'."
-    await update.message.reply_action("typing")
-    await update.message.reply_text(response)
+    update.message.reply_action("typing")
+    update.message.reply_text(response)
     if img:
-        await update.message.reply_action("upload_photo")
-        await update.message.reply_photo(img)
+        update.message.reply_action("upload_photo")
+        update.message.reply_photo(img)
 
 # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

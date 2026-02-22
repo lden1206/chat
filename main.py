@@ -4,7 +4,7 @@ import json
 import difflib
 import random
 
-from zalo_bot import Bot, Update
+from zalo_bot import Bot, Update, Message
 from zalo_bot.ext import Dispatcher, MessageHandler, filters
 
 app = Flask(__name__)
@@ -150,8 +150,8 @@ async def handle_message(update: Update, context):
             response = f"Xin lỗi, mình chưa có từ '{raw}'."
 
     await update.message.reply_text(response)
-    #if img:
-        #await update.message.reply_photo(photo=str(img))
+    if img:
+        await Message.reply_photo(img)
 
 # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

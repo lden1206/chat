@@ -92,7 +92,7 @@ async def handle_message(update: Update, context):
             response = f"Xin lỗi, mình chưa có từ '{raw}'."
 
     await update.message.reply_text(response)
-    await update.message.reply_photo(photo_url: img, caption: str = "")
+    await update.message.reply_photo(img)
 
 # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

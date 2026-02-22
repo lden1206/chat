@@ -75,11 +75,16 @@ async def handle_message(update: Update, context):
 
     # --- TRA TỪ ĐIỂN ---
     query = text_lower
+    img_to_send = None  # Khởi tạo biến ảnh mặc định là None
+
     if query in MECHANICAL_DICT:
         item = MECHANICAL_DICT[query]
         response = format_word_response(query, item)
+        
+        # Lấy trực tiếp URL ảnh, không bọc dấu ()
         raw_img = item.get("img_url", "")
-        img = f"({img_url})" if img_url else ""
+        if raw_img:
+            img_to_send = raw_img 
     else:
         suggestions = difflib.get_close_matches(query, DICT_KEYS, n=5, cutoff=0.5)
         if suggestions:
@@ -91,8 +96,16 @@ async def handle_message(update: Update, context):
         else:
             response = f"Xin lỗi, mình chưa có từ '{raw}'."
 
+    # Gửi tin nhắn text
     await update.message.reply_text(response)
-    await update.message.reply_photo(img)
+    
+    # Chỉ gọi hàm gửi ảnh NẾU tìm thấy link ảnh hợp lệ
+    if img_to_send:
+        try:
+            await update.message.reply_photo(img_to_send)
+        except Exception as e:
+            print(f"Lỗi khi gửi ảnh: {e}")
+            await update.message.reply_text("*(Lỗi: Không thể tải ảnh minh họa cho từ này)*")
 
 # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

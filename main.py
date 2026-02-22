@@ -137,6 +137,7 @@ async def handle_message(update: Update, context):
     if query in MECHANICAL_DICT:
         item = MECHANICAL_DICT[query]
         response = format_word_response(query, item)
+        img = item.get("audio_url", "")
     else:
         suggestions = difflib.get_close_matches(query, DICT_KEYS, n=5, cutoff=0.5)
         if suggestions:
@@ -149,6 +150,7 @@ async def handle_message(update: Update, context):
             response = f"Xin lỗi, mình chưa có từ '{raw}'."
 
     await update.message.reply_text(response)
+    await update.message.reply_photo(img)
 
 # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

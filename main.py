@@ -151,7 +151,7 @@ async def handle_message(update: Update, context):
 
     await update.message.reply_text(response)
     if img:
-        async reply_photo(img)
+        await message.reply_photo(img)
 
 # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

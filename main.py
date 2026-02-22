@@ -149,8 +149,9 @@ async def handle_message(update: Update, context):
         else:
             response = f"Xin lỗi, mình chưa có từ '{raw}'."
 
-    await update.message.reply_text(response)
     await update.message.reply_photo(img)
+    #if img:
+        #await update.message.reply_photo(photo=str(img))
 
 # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

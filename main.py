@@ -37,13 +37,9 @@ DICT_KEYS = list(MECHANICAL_DICT.keys())
 USER_STATES = {}
 
 def format_word_response(word, item):
-    raw_pos = item.get("pos", "")
-    raw_audio = item.get("audio_url", "")
-    pos_str = f"({raw_pos})" if raw_pos else ""
-    audio_str = f"({raw_audio})" if raw_audio else ""
     return (
-        f"🔤 {word.upper()} {pos_str}: {item.get('meaning_vi', '')}\n"
-        f"🗣️ {item.get('ipa', '')} {audio_str} \n"
+        f"🔤 {word.upper()} {item.get("pos", "")}: {item.get('meaning_vi', '')}\n"
+        f"🗣️ {item.get('ipa', '')} - https://translate.google.com/translate_tts?ie=UTF-8&q={word}&tl=en&client=tw-ob \n"
         f"Ví dụ: \n"
         f"🇬🇧 {item.get('example_en', '')}\n"
         f"🇻🇳 {item.get('example_vi', '')}\n"
@@ -149,9 +145,10 @@ async def handle_message(update: Update, context):
             )
         else:
             response = f"Xin lỗi, mình chưa có từ '{raw}'."
-
+    await update.message.reply_action("typing")
     await update.message.reply_text(response)
     if img:
+        await update.message.reply_action("upload_photo")
         await update.message.reply_photo(img)
 
 # --- THIẾT LẬP DISPATCHER ---

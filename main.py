@@ -38,8 +38,8 @@ USER_STATES = {}
 
 def format_word_response(word, item):
     raw_pos = item.get("pos", "")
-    raw_audio = item.get("audio_url", "")
     pos_str = f"({raw_pos})" if raw_pos else ""
+    raw_audio = item.get("audio_url", "")
     audio_str = f"({raw_audio})" if raw_audio else ""
     return (
         f"🔤 {word.upper()} {pos_str}: {item.get('meaning_vi', '')}\n"
@@ -54,7 +54,6 @@ def format_word_response(word, item):
 async def handle_message(update: Update, context):
     if not getattr(update, "message", None) or not getattr(update.message, "text", None):
         return
-
     raw = update.message.text
     text_lower = norm_text(raw)
 
@@ -137,6 +136,8 @@ async def handle_message(update: Update, context):
     if query in MECHANICAL_DICT:
         item = MECHANICAL_DICT[query]
         response = format_word_response(query, item)
+        raw_img = item.get("img_url", "")
+        img = f"({img_url})" if img_url else ""
     else:
         suggestions = difflib.get_close_matches(query, DICT_KEYS, n=5, cutoff=0.5)
         if suggestions:
@@ -149,6 +150,8 @@ async def handle_message(update: Update, context):
             response = f"Xin lỗi, mình chưa có từ '{raw}'."
 
     await update.message.reply_text(response)
+    if img:
+        await update.message.reply_photo(img)
 
 # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

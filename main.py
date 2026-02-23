@@ -77,9 +77,9 @@ async def handle_message(update: Update, context):
     await update.message.reply_action("typing")
     await update.message.reply_text(response)
     return
-   ''' if img:
-        await update.message.reply_action("upload_photo")
-        await update.message.reply_photo(img)'''
+   # if img:
+    #    await update.message.reply_action("upload_photo")
+     #   await update.message.reply_photo(img)
 
 # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

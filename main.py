@@ -34,10 +34,9 @@ MECHANICAL_DICT = load_mechanical_dict(DICT_PATH)
 DICT_KEYS = list(MECHANICAL_DICT.keys())
 
 def format_word_response(word, item):
-    audio = item.get('audio_url', '') if item.get('audio_url', '').endswith(".mp3") else f"https://translate.google.com/translate_tts?ie=UTF-8&q={word}&tl=en&client=tw-ob"
     return (
-        f"🔤 {word.upper()} {item.get('pos', "")}: {item.get('meaning_vi', '')}\n"
-        f"🗣️ {item.get('ipa', '')} - {audio} \n"
+        f"🔤 {word.upper()} {item.get("pos", "")}: {item.get('meaning_vi', '')}\n"
+        f"🗣️ {item.get('ipa', '')} - https://translate.google.com/translate_tts?ie=UTF-8&q={word}&tl=en&client=tw-ob \n"
         f"Ví dụ: \n"
         f"🇬🇧 {item.get('example_en', '')}\n"
         f"🇻🇳 {item.get('example_vi', '')}\n"
@@ -45,12 +44,18 @@ def format_word_response(word, item):
     )
 
 # --- XỬ LÝ TIN NHẮN ---
-def handle_message(update: Update, context):
+async def handle_message(update: Update, context):
     if not getattr(update, "message", None) or not getattr(update.message, "text", None):
         return
 
     raw = update.message.text
     text_lower = norm_text(raw)
+
+    # chat_id dùng để reply + lưu trạng thái
+    chat_id = getattr(getattr(update.message, "chat", None), "id", None)
+    if chat_id is None:
+        # Nếu không có chat.id thì không xử lý (tránh crash)
+        return
 
     # --- TRA TỪ ĐIỂN ---
     query = text_lower
@@ -58,7 +63,7 @@ def handle_message(update: Update, context):
     if query in MECHANICAL_DICT:
         item = MECHANICAL_DICT[query]
         response = format_word_response(query, item)
-        img = item.get('img_url', "")
+        img = item.get("img_url", "")
     else:
         suggestions = difflib.get_close_matches(query, DICT_KEYS, n=5, cutoff=0.5)
         if suggestions:
@@ -69,11 +74,11 @@ def handle_message(update: Update, context):
             )
         else:
             response = f"Xin lỗi, mình chưa có từ '{raw}'."
-    update.message.reply_action("typing")
-    update.message.reply_text(response)
+    await update.message.reply_action("typing")
+    await update.message.reply_text(response)
     if img:
-        update.message.reply_action("upload_photo")
-        update.message.reply_photo(img)
+        await update.message.reply_action("upload_photo")
+        await update.message.reply_photo(img)
 
 # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

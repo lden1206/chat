@@ -78,9 +78,9 @@ async def handle_message(update: Update, context):
     await update.message.reply_action('typing')
     await update.message.reply_text(response)
     if img and img.startswith("http"):
-        #await bot.send_photo(update.message.chat_id, "", img)
-        await update.message.reply_text(img)
-# --- THIẾT LẬP DISPATCHER ---
+        await bot.send_photo(update.message.chat_id, "", img)
+
+    # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)
 dispatcher.add_handler(MessageHandler(filters.TEXT, handle_message))
 

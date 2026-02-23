@@ -113,9 +113,10 @@ def home():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    payload = request.get_json(silent=True) or {}
-    if not payload:
-        return "No payload", 400
+    print("🔥🔥 WEBHOOK HIT 🔥🔥")
+
+    payload = request.get_json(force=True)
+    print("PAYLOAD =", payload)
 
     data = payload.get("result") or payload
     update = Update.de_json(data, bot)
@@ -123,7 +124,6 @@ def webhook():
     dispatcher.process_update(update)
 
     return "ok", 200
-
 # ================= RUN APP =================
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 10000))

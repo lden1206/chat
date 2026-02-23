@@ -37,10 +37,10 @@ DICT_KEYS = list(MECHANICAL_DICT.keys())
 USER_STATES = {}
 
 def format_word_response(word, item):
-    raw_pos = item.get("pos", "")
-    raw_audio = item.get("audio_url", "")
+    raw_pos = item.get('pos', "")
+    raw_audio = item.get('audio_url', "")
     pos_str = f"({raw_pos})" if raw_pos else ""
-    audio_str = f"({raw_audio})" if raw_audio.endswith(".mp3") else f"https://translate.google.com/translate_tts?ie=UTF-8&q={word}&tl=en&client=tw-ob"
+    audio_str = f"({raw_audio})" if raw_audio else ""
     return (
         f"🔤 {word.upper()} {pos_str}: {item.get('meaning_vi', '')}\n"
         f"🗣️ {item.get('ipa', '')} {audio_str} \n"

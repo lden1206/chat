@@ -2,7 +2,6 @@ from flask import Flask, request
 import os
 import json
 import difflib
-import random
 
 from zalo_bot import Bot, Update
 from zalo_bot.ext import Dispatcher, MessageHandler, filters
@@ -57,6 +56,7 @@ async def handle_message(update: Update, context):
 
     raw = update.message.text
     text_lower = norm_text(raw)
+    img = None
 
     # --- TRA TỪ ĐIỂN ---
     query = text_lower

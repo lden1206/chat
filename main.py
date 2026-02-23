@@ -62,6 +62,7 @@ async def handle_message(update: Update, context):
     query = text_lower
     if query in MECHANICAL_DICT:
         item = MECHANICAL_DICT[query]
+        img = item.get('img_url', '')
         response = format_word_response(query, item)
     else:
         suggestions = difflib.get_close_matches(query, DICT_KEYS, n=5, cutoff=0.5)
@@ -76,6 +77,8 @@ async def handle_message(update: Update, context):
 
     await update.message.reply_action('typing')
     await update.message.reply_text(response)
+    if img:
+        await update.message.reply_photo(img)    
 
 # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

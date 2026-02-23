@@ -39,10 +39,10 @@ def format_word_response(word, item):
     raw_pos = item.get("pos", "")
     raw_audio = item.get("audio_url", "")
     pos_str = f"({raw_pos})" if raw_pos else ""
-    audio_str = f"({raw_audio})" if raw_audio.endswith(".mp3") else f"https://translate.google.com/translate_tts?ie=UTF-8&q={"".join(word.split())}&tl=en&client=tw-ob"
+    audio_str = f"{raw_audio}" if raw_audio.endswith(".mp3") else f"https://translate.google.com/translate_tts?ie=UTF-8&q={"".join(word.split())}&tl=en&client=tw-ob"
     return (
         f"🔤 {word.upper()} {pos_str}: {item.get('meaning_vi', '')}\n"
-        f"🗣️ {item.get('ipa', '')} - {audio_str} \n"
+        f"🗣️ {item.get('ipa', '')} - 🔊 {audio_str} \n"
         f"Ví dụ: \n"
         f"🇬🇧 {item.get('example_en', '')}\n"
         f"🇻🇳 {item.get('example_vi', '')}\n"
@@ -78,7 +78,7 @@ async def handle_message(update: Update, context):
     await update.message.reply_action('typing')
     await update.message.reply_text(response)
     if img and img.startswith("http"):
-        await bot.send_photo(update.message.chat_id, "", img)
+        await bot.send_photo(update.message.chat.id, "", img)
 
     # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

@@ -77,8 +77,14 @@ async def handle_message(update: Update, context):
 
     await update.message.reply_action('typing')
     await update.message.reply_text(response)
-    if img:
-        await update.message.reply_photo(img)    
+    if img and img.startswith("http"):
+        try:
+            await bot.send_photo(
+                chat_id=update.message.chat.id,
+                photo=img
+            )
+        except Exception as e:
+            print("Send photo error:", e)
 
 # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

@@ -1,95 +1,130 @@
 from flask import Flask, request
-import asyncio
-from zalo_bot import Bot, Update
-from zalo_bot.ext import Dispatcher, MessageHandler, filters
-import json
 import os
+import json
 import difflib
 
+from zalo_bot import Bot, Update
+from zalo_bot.ext import Dispatcher, MessageHandler, filters
+
 app = Flask(__name__)
-TOKEN = "2195711801638941102:eZWDRFTEXPKJbpYEiCOBPDcQZwDqQNWGNOqRPeQtSgeLaBDGMmBVAVnhWoVakDbL" 
+
+# ================= CONFIG =================
+TOKEN = os.getenv("ZALO_TOKEN")  # Set trên Render
 bot = Bot(token=TOKEN)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DICT_PATH = os.path.join(BASE_DIR, "medictdata.json")
 
+# ================= UTILS =================
 def norm_text(s: str) -> str:
     if not s:
         return ""
     return " ".join(s.lower().strip().split())
 
-def load_mechanical_dict(path: str) -> dict:
+def load_dict(path: str) -> dict:
     if not os.path.exists(path):
-        # Trả về dict rỗng để code không chết nếu thiếu file
-        print(f"Cảnh báo: Không tìm thấy {path}") 
+        print("⚠ Không tìm thấy medictdata.json")
         return {}
-
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
-    
     return {norm_text(k): v for k, v in data.items()}
 
-MECHANICAL_DICT = load_mechanical_dict(DICT_PATH)
-DICT_KEYS = list(MECHANICAL_DICT.keys()) # <--- Tạo danh sách key để tra cứu nhanh
+MECHANICAL_DICT = load_dict(DICT_PATH)
+DICT_KEYS = list(MECHANICAL_DICT.keys())
 
-async def handle_message(update: Update, context):
-    if not getattr(update, "message", None) or not getattr(update.message, "text", None):
+# ================= FORMAT RESPONSE =================
+def format_word_response(word, item):
+    raw_pos = item.get("pos", "")
+    raw_audio = item.get("audio_url", "") or ""
+
+    pos_str = f"({raw_pos})" if raw_pos else ""
+
+    if raw_audio and raw_audio.endswith(".mp3"):
+        audio_str = raw_audio
+    else:
+        audio_str = (
+            f"https://translate.google.com/translate_tts"
+            f"?ie=UTF-8&q={word}&tl=en&client=tw-ob"
+        )
+
+    return (
+        f"🔤 {word.upper()} {pos_str}: {item.get('meaning_vi', '')}\n"
+        f"🗣️ {item.get('ipa', '')} {audio_str}\n"
+        f"Ví dụ:\n"
+        f"🇬🇧 {item.get('example_en', '')}\n"
+        f"🇻🇳 {item.get('example_vi', '')}\n"
+        f"(📚 Bài {item.get('lesson', '')} - Sách {item.get('book', '')})"
+    )
+
+# ================= MESSAGE HANDLER =================
+def handle_message(update: Update, context):
+
+    if not getattr(update, "message", None):
+        return
+
+    if not getattr(update.message, "text", None):
         return
 
     raw = update.message.text
-    query = norm_text(raw)
+    text_lower = norm_text(raw)
 
-    if query in MECHANICAL_DICT:
-        item = MECHANICAL_DICT[query]
-        response = (
-            f"🔤 {query.upper()}\n"
-            f"/{item.get('ipa', '')}/\n\n"
-            f"🇻🇳 {item.get('meaning_vi', '')}\n\n"
-            f"📘 {item.get('example_en', '')}\n"
-            f"📙 {item.get('example_vi', '')}\n"
-            f"📚 Bài {item.get('lesson', '')} - Sách {item.get('book', '')}"
-        )
+    if not DICT_KEYS:
+        update.message.reply_text("⚠️ Từ điển chưa load được.")
+        return
+
+    if text_lower in MECHANICAL_DICT:
+        item = MECHANICAL_DICT[text_lower]
+        response = format_word_response(text_lower, item)
+        img_url = item.get("img_url", "") or ""
     else:
-        # Logic gợi ý từ gần đúng
-        suggestions = difflib.get_close_matches(query, DICT_KEYS, n=5, cutoff=0.5)
-        
+        suggestions = difflib.get_close_matches(
+            text_lower, DICT_KEYS, n=5, cutoff=0.5
+        )
+
         if suggestions:
-            suggest_text = "\n".join([f"• {s}" for s in suggestions])
+            list_str = "\n".join([f"• {s}" for s in suggestions])
             response = (
                 f"❌ Không tìm thấy '{raw}'.\n\n"
-                f"💡 Có thể bạn muốn tìm:\n{suggest_text}"
+                f"💡 Có thể bạn muốn tìm:\n{list_str}"
             )
         else:
-            response = f"Xin lỗi, mình không tìm thấy từ '{raw}' trong từ điển."
+            response = f"Xin lỗi, mình chưa có từ '{raw}'."
 
-    await update.message.reply_text(response)
+        img_url = ""
 
+    # Gửi text
+    update.message.reply_text(response)
+
+    # Gửi ảnh nếu có
+    if img_url:
+        try:
+            update.message.reply_photo(img_url)
+        except Exception as e:
+            print("Send image error:", e)
+
+# ================= DISPATCHER =================
 dispatcher = Dispatcher(bot, None, workers=0)
 dispatcher.add_handler(MessageHandler(filters.TEXT, handle_message))
 
+# ================= ROUTES =================
 @app.route("/")
-def index():
-    return "<h1>Bot Từ Điển đang hoạt động!</h1>"
+def home():
+    return "Bot Dictionary is running!"
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
     payload = request.get_json(silent=True) or {}
-    
     if not payload:
         return "No payload", 400
-        
-    data = payload.get("result", payload)
+
+    data = payload.get("result") or payload
     update = Update.de_json(data, bot)
 
-    # Chạy async an toàn
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(dispatcher.process_update(update))
-    finally:
-        loop.close()
+    dispatcher.process_update(update)
 
     return "ok", 200
 
+# ================= RUN APP =================
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8443)
+    port = int(os.getenv("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)

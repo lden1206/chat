@@ -101,7 +101,7 @@ def generate_quiz(words_dict):
 
 # ================= HANDLE MESSAGE =================
 async def handle_message(update: Update, context):
-    if not update.message.text:
+    if not update.message:
         return
 
     chat_id = update.message.chat.id
@@ -110,6 +110,9 @@ async def handle_message(update: Update, context):
         await bot.send_sticker(chat_id, "b5d785f8b9bd50e309ac")
         return
 
+    if not update.message.text:
+        return
+        
     raw = update.message.text
     text = norm_text(raw)
     state = USER_STATES.get(chat_id, {})

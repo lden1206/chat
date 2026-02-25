@@ -245,7 +245,7 @@ async def handle_message(update: Update, context):
         await bot.send_sticker(chat_id, random.choice(hi))
             
     # ===== 1. TRA TỪ =====
-    if text in MECHANICAL_DICT:
+    elif text in MECHANICAL_DICT:
         await update.message.reply_action('typing')
         await update.message.reply_text(format_word_response(text, MECHANICAL_DICT[text]))
         img = MECHANICAL_DICT[text].get('img_url', "")

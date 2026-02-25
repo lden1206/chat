@@ -234,7 +234,7 @@ async def handle_message(update: Update, context):
 
         # Chỉ có lesson
         if lesson and not book:
-            await update.message.reply_text("Bạn muốn tra từ vựng bài này ở sách nào? (TACK1/TACK2/TACKCB3/TACKCB4))
+            await update.message.reply_text("Bạn muốn tra từ vựng bài này ở sách nào? (TACK1/TACK2/TACKCB3/TACKCB4)")
             return
 
     # Nếu có suggestion thì trả suggestion

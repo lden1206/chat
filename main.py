@@ -104,11 +104,12 @@ async def handle_message(update: Update, context):
     if not update.message:
         return
 
+    chat_id = update.message.chat.id
+    
     if update.message.sticker:
         await bot.send_sticker(chat_id, "b5d785f8b9bd50e309ac")
         return
 
-    chat_id = update.message.chat.id
     raw = update.message.text
     text = norm_text(raw)
     state = USER_STATES.get(chat_id, {})
@@ -241,7 +242,7 @@ async def handle_message(update: Update, context):
             return
 
     # ===== CHECK GRETTING =====
-    if text in ["hi", "/-strong", "helo", "hello", "chào bot", "chào", "bot ơi", "hii", "hiii", "hiiii", "hiiiii", "hiiiiiii", "heloo", "helooo", "helooooo", "heloooo", "helloo", "hellooo", "hellooooo", "helloooo"]:
+    if text in ["hi", "/-strong", "alo", "alu", "aloo", "alooo", "helo", "hello", "chào bot", "chào", "bot ơi", "hii", "hiii", "hiiii", "hiiiii", "hiiiiiii", "heloo", "helooo", "helooooo", "heloooo", "helloo", "hellooo", "hellooooo", "helloooo"]:
         await bot.send_sticker(chat_id, random.choice(hi))
             
     # ===== 1. TRA TỪ =====

@@ -198,8 +198,45 @@ async def handle_message(update: Update, context):
             await bot.send_photo(update.message.chat.id, "", img)
         return
 
-    # ===== 2. SUGGESTION =====
+        # ===== 2. SUGGESTION =====
     suggestions = difflib.get_close_matches(text, DICT_KEYS, n=5, cutoff=0.6)
+
+    # ===== 3. BOOK LESSON (CHỈ CHECK KHI KHÔNG CÓ SUGGESTION) =====
+    if not suggestions:
+
+        book, lesson = extract_book_lesson(text)
+
+        # Có đủ book + lesson
+        if book and lesson:
+            words = get_words(book, lesson)
+            if words:
+                USER_STATES[chat_id] = {"mode": "menu", "words": words}
+                await update.message.reply_action('typing')
+                await update.message.reply_text(
+                    f"📚 {book.upper()} - Lesson {lesson}\n\n"
+                    "1️⃣ Liệt kê từ\n"
+                    "2️⃣ Quiz trắc nghiệm"
+                )
+            else:
+                await update.message.reply_text("Không tìm thấy dữ liệu bài này.")
+            return
+
+        # Chỉ có book
+        if book and not lesson:
+            await update.message.reply_text(
+                f"Bạn muốn tra {book.upper()} lesson mấy? (1-10)"
+            )
+            return
+
+        # Chỉ có lesson
+        if lesson and not book:
+            await update.message.reply_text(
+                "Bạn muốn tra lesson này ở sách nào?\n"
+                "tack1, tack2, tackcb3, tackcb4"
+            )
+            return
+
+    # Nếu có suggestion thì trả suggestion
     if suggestions:
         await update.message.reply_action('typing')
         await update.message.reply_text(
@@ -207,23 +244,6 @@ async def handle_message(update: Update, context):
             "💡 Có thể bạn muốn tìm:\n" +
             "\n".join([f"• {s}" for s in suggestions])
         )
-        return
-
-    # ===== 3. BOOK LESSON =====
-    book, lesson = extract_book_lesson(text)
-
-    if book and lesson:
-        words = get_words(book, lesson)
-        if words:
-            USER_STATES[chat_id] = {"mode": "menu", "words": words}
-            await update.message.reply_action('typing')
-            await update.message.reply_text(
-                f"📚 {book.upper()} - Lesson {lesson}\n\n"
-                "1️⃣ Liệt kê từ\n"
-                "2️⃣ Quiz trắc nghiệm"
-            )
-        else:
-            await update.message.reply_text("Không tìm thấy dữ liệu bài này.")
         return
 
     # ===== NOT FOUND =====

@@ -2,6 +2,8 @@ from flask import Flask, request
 import os
 import json
 import difflib
+import random
+import re
 
 from zalo_bot import Bot, Update
 from zalo_bot.ext import Dispatcher, MessageHandler, filters

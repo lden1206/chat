@@ -255,8 +255,8 @@ async def handle_message(update: Update, context):
             await bot.send_photo(chat_id, "", img)
         return
 
-    else:
             # ===== 2. SUGGESTION =====
+    else:
         suggestions = difflib.get_close_matches(text, DICT_KEYS, n=5, cutoff=0.6)
     
         # ===== 3. BOOK LESSON (CHỈ CHECK KHI KHÔNG CÓ SUGGESTION) =====
@@ -296,22 +296,22 @@ async def handle_message(update: Update, context):
                 await update.message.reply_text("Bạn muốn tra từ vựng bài này ở sách nào? (TACK1/TACK2/TACKCB3/TACKCB4)")
                 return
     
-            # Nếu có suggestion thì trả suggestion
-            if suggestions:
-                await update.message.reply_action('typing')
-                await update.message.reply_text(
-                    f"❌ Không tìm thấy '{raw}'.\n\n"
-                    "💡 Có thể bạn muốn tìm:\n" +
-                    "\n".join([f"• {s}" for s in suggestions])
-                )
-                return
-        
-            # ===== NOT FOUND =====
+        # Nếu có suggestion thì trả suggestion
+        if suggestions:
             await update.message.reply_action('typing')
             await update.message.reply_text(
-                f"Xin lỗi, mình chưa có từ '{raw}'.\n"
-                "Vui lòng nhập từ khác hoặc tra theo cú pháp: SÁCH ...(TACK1/TACK2/TACKCB3/TACKCB4) BÀI ...(1-8)"
+                f"❌ Không tìm thấy '{raw}'.\n\n"
+                "💡 Có thể bạn muốn tìm:\n" +
+                "\n".join([f"• {s}" for s in suggestions])
             )
+            return
+    
+        # ===== NOT FOUND =====
+        await update.message.reply_action('typing')
+        await update.message.reply_text(
+            f"Xin lỗi, mình chưa có từ '{raw}'.\n"
+            "Vui lòng nhập từ khác hoặc tra theo cú pháp: SÁCH ...(TACK1/TACK2/TACKCB3/TACKCB4) BÀI ...(1-8)"
+        )
 
     # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

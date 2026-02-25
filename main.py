@@ -253,22 +253,36 @@ async def handle_message(update: Update, context):
         "Vui lòng nhập từ khác hoặc tra theo cú pháp: tack1 lesson 2"
     )
 
-# ================= DISPATCHER =================
+    # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)
 dispatcher.add_handler(MessageHandler(filters.TEXT, handle_message))
 
 @app.route("/")
 def index():
-    return "Bot Running"
+    return "<h1>Bot Dictionary V5 is running!</h1>"
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
     payload = request.get_json(silent=True) or {}
+    if not payload:
+        return "No payload", 400
+
     data = payload.get("result") or payload
     update = Update.de_json(data, bot)
-    dispatcher.process_update_sync(update)
+
+    # ✅ CHẠY SYNC, KHÔNG TẠO EVENT LOOP, KHÔNG NEST_ASYNCIO
+    # Tùy version thư viện, 1 trong các cách dưới sẽ tồn tại:
+    if hasattr(dispatcher, "process_update_sync"):
+        dispatcher.process_update_sync(update)
+    elif hasattr(dispatcher, "application") and hasattr(dispatcher.application, "process_update_sync"):
+        dispatcher.application.process_update_sync(update)
+    else:
+        # fallback cuối cùng nếu thư viện chỉ có async
+        import asyncio
+        asyncio.run(dispatcher.process_update(update))
+
     return "ok", 200
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
+    port = int(os.getenv("PORT", "10000"))
     app.run(host="0.0.0.0", port=port)

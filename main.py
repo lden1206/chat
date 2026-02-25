@@ -101,7 +101,7 @@ def generate_quiz(words_dict):
 
 # ================= HANDLE MESSAGE =================
 async def handle_message(update: Update, context):
-    if not update.message:
+    if not update.message.text:
         return
 
     chat_id = update.message.chat.id
@@ -244,6 +244,7 @@ async def handle_message(update: Update, context):
     # ===== CHECK GRETTING =====
     if text in ["hi", "/-strong", "alo", "alu", "aloo", "alooo", "helo", "hello", "chào bot", "chào", "bot ơi", "hii", "hiii", "hiiii", "hiiiii", "hiiiiiii", "heloo", "helooo", "helooooo", "heloooo", "helloo", "hellooo", "hellooooo", "helloooo"]:
         await bot.send_sticker(chat_id, random.choice(hi))
+        return
             
     # ===== 1. TRA TỪ =====
     elif text in MECHANICAL_DICT:
@@ -280,13 +281,9 @@ async def handle_message(update: Update, context):
     
             # Chỉ có book
             if book and not lesson:
-                USER_STATES[chat_id] = {
-                    "mode": "waiting_lesson",
-                    "book": book
-                }
-                await update.message.reply_text(
-                    f"Bạn muốn tra từ vựng bài mấy sách {book.upper()}? (1-8)"
-                )
+                USER_STATES[chat_id] = {"mode": "waiting_lesson",
+                                        "book": book}
+                await update.message.reply_text(f"Bạn muốn tra từ vựng bài mấy sách {book.upper()}? (1-8)")
                 return
     
             # Chỉ có lesson
@@ -297,7 +294,7 @@ async def handle_message(update: Update, context):
                 return
     
         # Nếu có suggestion thì trả suggestion
-        if suggestions:
+        else:
             await update.message.reply_action('typing')
             await update.message.reply_text(
                 f"❌ Không tìm thấy '{raw}'.\n\n"

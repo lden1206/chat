@@ -237,7 +237,7 @@ async def handle_message(update: Update, context):
             return
 
     # ===== CHECK GRETTING =====
-    if text in ["hi", "/-strong", "alo", "alu", "aloo", "alooo", "helo", "hello", "chào bot", "chào", "bot ơi", "hii", "hiii", "hiiii", "hiiiii", "hiiiiiii", "heloo", "helooo", "helooooo", "heloooo", "helloo", "hellooo", "hellooooo", "helloooo"]:
+    if any(g in text for g in ["hi", "hello", "chào", "bot ơi"]) or text in ["hi", "/-strong", "alo", "alu", "aloo", "alooo", "helo", "hello", "chào bot", "chào", "bot ơi", "hii", "hiii", "hiiii", "hiiiii", "hiiiiiii", "heloo", "helooo", "helooooo", "heloooo", "helloo", "hellooo", "hellooooo", "helloooo"]:
         await bot.send_sticker(chat_id, random.choice(hi))
         await update.message.reply_text("Vui lòng nhập từ hoặc tra theo cú pháp: SÁCH ...(TACK1/TACK2/TACKCB3/TACKCB4) BÀI ...(1-8)")
         return
@@ -286,7 +286,7 @@ async def handle_message(update: Update, context):
             if lesson and not book:
                 USER_STATES[chat_id] = {"mode": "waiting_book",
                                         "lesson": lesson}
-                await update.message.reply_text("Bạn muốn tra từ vựng bài {lesson} ở sách nào? (TACK1/TACK2/TACKCB3/TACKCB4)")
+                await update.message.reply_text(f"Bạn muốn tra từ vựng bài {lesson} ở sách nào? (TACK1/TACK2/TACKCB3/TACKCB4)")
                 return
     
         # Nếu có suggestion thì trả suggestion

@@ -41,7 +41,7 @@ def format_word_response(word, item):
     clean = "".join(word.split())
     audio = item.get("audio_url")
 
-    if not audio:
+    if not audio or not audio.endswith(".mp3"):
         audio = f"https://translate.google.com/translate_tts?ie=UTF-8&q={clean}&tl=en&client=tw-ob"
 
     return (
@@ -152,6 +152,10 @@ async def handle_message(update: Update, context):
         if text in MECHANICAL_DICT:
             await update.message.reply_action('typing')
             await update.message.reply_text(format_word_response(text, MECHANICAL_DICT[text]))
+            img = MECHANICAL_DICT[text].get('img_url', "")
+            if img and img.startswith("http"):
+                await update.message.reply_action('sending_photo')
+                await bot.send_photo(update.message.chat.id, "", img)
         else:
             suggestions = difflib.get_close_matches(text, DICT_KEYS, n=5, cutoff=0.8)
             if suggestions:
@@ -213,7 +217,7 @@ async def handle_message(update: Update, context):
                 USER_STATES[chat_id] = {"mode": "menu", "words": words}
                 await update.message.reply_action('typing')
                 await update.message.reply_text(
-                    f"📚 {book.upper()} - Lesson {lesson}\n\n"
+                    f"📚 Sách {book.upper()} - Bài {lesson}\n\n"
                     "1️⃣ Liệt kê từ\n"
                     "2️⃣ Quiz trắc nghiệm"
                 )
@@ -224,16 +228,13 @@ async def handle_message(update: Update, context):
         # Chỉ có book
         if book and not lesson:
             await update.message.reply_text(
-                f"Bạn muốn tra {book.upper()} lesson mấy? (1-10)"
+                f"Bạn muốn tra từ vựng bài mấy sách {book.upper()}? (1-10)"
             )
             return
 
         # Chỉ có lesson
         if lesson and not book:
-            await update.message.reply_text(
-                "Bạn muốn tra lesson này ở sách nào?\n"
-                "tack1, tack2, tackcb3, tackcb4"
-            )
+            await update.message.reply_text("Bạn muốn tra từ vựng bài này ở sách nào? (TACK1/TACK2/TACKCB3/TACKCB4))
             return
 
     # Nếu có suggestion thì trả suggestion
@@ -250,7 +251,7 @@ async def handle_message(update: Update, context):
     await update.message.reply_action('typing')
     await update.message.reply_text(
         f"Xin lỗi, mình chưa có từ '{raw}'.\n"
-        "Vui lòng nhập từ khác hoặc tra theo cú pháp: tack1 lesson 2"
+        "Vui lòng nhập từ khác hoặc tra theo cú pháp: sách ...(TACK1/TACK2/TACKCB3/TACKCB4) bài ...(1-10)"
     )
 
     # --- THIẾT LẬP DISPATCHER ---

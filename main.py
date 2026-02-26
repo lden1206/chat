@@ -237,7 +237,7 @@ async def handle_message(update: Update, context):
             return
 
     # ===== CHECK GRETTING =====
-    if any(g in text for g in ["hi", "hello", "chào", "bot ơi"]) or text in ["hi", "/-strong", "alo", "alu", "aloo", "alooo", "helo", "hello", "chào bot", "chào", "bot ơi", "hii", "hiii", "hiiii", "hiiiii", "hiiiiiii", "heloo", "helooo", "helooooo", "heloooo", "helloo", "hellooo", "hellooooo", "helloooo"]:
+    if text in ["hi", "/-strong", "alo", "alu", "aloo", "alooo", "helo", "hello", "chào bot", "chào", "bot ơi", "hii", "hiii", "hiiii", "hiiiii", "hiiiiiii", "heloo", "helooo", "helooooo", "heloooo", "helloo", "hellooo", "hellooooo", "helloooo"]:
         await bot.send_sticker(chat_id, random.choice(hi))
         await update.message.reply_text("Vui lòng nhập từ hoặc tra theo cú pháp: SÁCH ...(TACK1/TACK2/TACKCB3/TACKCB4) BÀI ...(1-8)")
         return
@@ -254,43 +254,41 @@ async def handle_message(update: Update, context):
 
             # ===== 2. SUGGESTION =====
     else:
-        suggestions = difflib.get_close_matches(text, DICT_KEYS, n=5, cutoff=0.6)
-    
         # ===== 3. BOOK LESSON (CHỈ CHECK KHI KHÔNG CÓ SUGGESTION) =====
-        if not suggestions:
-            book, lesson = extract_book_lesson(text)
-    
-            # Có đủ book + lesson
-            if book and lesson:
-                words = get_words(book, lesson)
-                if words:
-                    USER_STATES[chat_id] = {"mode": "menu", "words": words}
-                    await update.message.reply_action('typing')
-                    await update.message.reply_text(
-                        f"📚 Sách {book.upper()} - Bài {lesson}\n\n"
-                        "1️⃣ Liệt kê từ\n"
-                        "2️⃣ Quiz trắc nghiệm"
-                    )
-                else:
-                    await update.message.reply_text("Không tìm thấy dữ liệu bài này.")
-                return
-    
-            # Chỉ có book
-            if book and not lesson:
-                USER_STATES[chat_id] = {"mode": "waiting_lesson",
-                                        "book": book}
-                await update.message.reply_text(f"Bạn muốn tra từ vựng bài mấy sách {book.upper()}? (1-8)")
-                return
-    
-            # Chỉ có lesson
-            if lesson and not book:
-                USER_STATES[chat_id] = {"mode": "waiting_book",
-                                        "lesson": lesson}
-                await update.message.reply_text(f"Bạn muốn tra từ vựng bài {lesson} ở sách nào? (TACK1/TACK2/TACKCB3/TACKCB4)")
-                return
+        book, lesson = extract_book_lesson(text)
+
+        # Có đủ book + lesson
+        if book and lesson:
+            words = get_words(book, lesson)
+            if words:
+                USER_STATES[chat_id] = {"mode": "menu", "words": words}
+                await update.message.reply_action('typing')
+                await update.message.reply_text(
+                    f"📚 Sách {book.upper()} - Bài {lesson}\n\n"
+                    "1️⃣ Liệt kê từ\n"
+                    "2️⃣ Quiz trắc nghiệm"
+                )
+            else:
+                await update.message.reply_text("Không tìm thấy dữ liệu bài này.")
+            return
+
+        # Chỉ có book
+        elif book and not lesson:
+            USER_STATES[chat_id] = {"mode": "waiting_lesson",
+                                    "book": book}
+            await update.message.reply_text(f"Bạn muốn tra từ vựng bài mấy sách {book.upper()}? (1-8)")
+            return
+
+        # Chỉ có lesson
+        elif lesson and not book:
+            USER_STATES[chat_id] = {"mode": "waiting_book",
+                                    "lesson": lesson}
+            await update.message.reply_text(f"Bạn muốn tra từ vựng bài {lesson} ở sách nào? (TACK1/TACK2/TACKCB3/TACKCB4)")
+            return
     
         # Nếu có suggestion thì trả suggestion
-        else:
+        suggestions = difflib.get_close_matches(text, DICT_KEYS, n=5, cutoff=0.6)
+        if suggestions:
             await update.message.reply_action('typing')
             await update.message.reply_text(
                 f"❌ Không tìm thấy '{raw}'.\n\n"
@@ -300,11 +298,12 @@ async def handle_message(update: Update, context):
             return
     
         # ===== NOT FOUND =====
-        await update.message.reply_action('typing')
-        await update.message.reply_text(
-            f"Xin lỗi, mình chưa có từ '{raw}'.\n"
-            "Vui lòng nhập từ khác hoặc tra theo cú pháp: SÁCH ...(TACK1/TACK2/TACKCB3/TACKCB4) BÀI ...(1-8)"
-        )
+        else:
+            await update.message.reply_action('typing')
+            await update.message.reply_text(
+                f"Xin lỗi, mình chưa có từ '{raw}'.\n"
+                "Vui lòng nhập từ khác hoặc tra theo cú pháp: SÁCH ...(TACK1/TACK2/TACKCB3/TACKCB4) BÀI ...(1-8)"
+            )
 
     # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

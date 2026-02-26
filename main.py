@@ -101,10 +101,18 @@ def generate_quiz(words_dict):
 
 # ================= HANDLE MESSAGE =================
 async def handle_message(update: Update, context):
-    if not update.message or not update.message.text:
+    if not update.message:
         return
 
-    chat_id = update.message.chat.id      
+    chat_id = update.message.chat.id
+    
+    if update.message.sticker:
+        await bot.send_sticker(chat_id, "b5d785f8b9bd50e309ac")
+        return
+
+    if not update.message.text:
+        return
+        
     raw = update.message.text
     text = norm_text(raw)
     state = USER_STATES.get(chat_id, {})
@@ -169,7 +177,7 @@ async def handle_message(update: Update, context):
         else:
             await bot.send_sticker(chat_id, random.choice(sai))
             await update.message.reply_action('typing')
-            await update.message.reply_text(f"✅ Đáp án đúng: {state['correct'].upper()}")
+            await update.message.reply_text(f"❌ Đáp án đúng: {state['correct'].upper()}")
 
         await update.message.reply_action('typing')
         await update.message.reply_text("Bạn có muốn chơi tiếp không? (có/không)")
@@ -217,7 +225,7 @@ async def handle_message(update: Update, context):
     if state.get("mode") == "menu":
         if text == "1":
             words = state["words"]
-            response = "📚 Danh sách từ:\n"
+            response = "📚 Danh sách từ vựng:\n"
             for w, item in words.items():
                 response += f"• {w} : {item.get('meaning_vi')}\n"
             await update.message.reply_text(response)
@@ -239,7 +247,6 @@ async def handle_message(update: Update, context):
     # ===== CHECK GRETTING =====
     if text in ["hi", "/-strong", "alo", "alu", "aloo", "alooo", "helo", "hello", "chào bot", "chào", "bot ơi", "hii", "hiii", "hiiii", "hiiiii", "hiiiiiii", "heloo", "helooo", "helooooo", "heloooo", "helloo", "hellooo", "hellooooo", "helloooo"]:
         await bot.send_sticker(chat_id, random.choice(hi))
-        await update.message.reply_text("Vui lòng nhập từ hoặc tra theo cú pháp: SÁCH ...(TACK1/TACK2/TACKCB3/TACKCB4) BÀI ...(1-8)")
         return
             
     # ===== 1. TRA TỪ =====
@@ -286,7 +293,7 @@ async def handle_message(update: Update, context):
             if lesson and not book:
                 USER_STATES[chat_id] = {"mode": "waiting_book",
                                         "lesson": lesson}
-                await update.message.reply_text("Bạn muốn tra từ vựng bài {lesson} ở sách nào? (TACK1/TACK2/TACKCB3/TACKCB4)")
+                await update.message.reply_text("Bạn muốn tra từ vựng bài này ở sách nào? (TACK1/TACK2/TACKCB3/TACKCB4)")
                 return
     
         # Nếu có suggestion thì trả suggestion

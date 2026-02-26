@@ -283,20 +283,37 @@ async def handle_message(update: Update, context):
 dispatcher = Dispatcher(bot, None, workers=4)
 dispatcher.add_handler(MessageHandler(filters.TEXT, handle_message))
 
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    payload = request.get_json(silent=True) or {}
+    payload = request.get_json(silent=True)
+
     if not payload:
         return "No payload", 400
-    data = payload.get("result") or payload
-    update = Update.de_json(data, bot)
-    asyncio.get_event_loop().create_task(dispatcher.process_update(update))
+
+    try:
+        data = payload.get("result") or payload
+        update = Update.de_json(data, bot)
+
+        # Tạo event loop riêng cho mỗi request (an toàn với gunicorn threads)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(dispatcher.process_update(update))
+        loop.close()
+
+    except Exception as e:
+        print("Webhook error:", e)
+        return "error", 500
+
     return "ok", 200
+
 
 @app.route("/")
 def index():
     return "<h1>Bot Dictionary Production Ready</h1>"
 
+
+# ⚠️ Chỉ dùng khi chạy local
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "10000"))
-    app.run(host="0.0.0.0", port=port, threaded=True)
+    app.run(host="0.0.0.0", port=port)

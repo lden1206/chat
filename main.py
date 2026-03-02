@@ -224,7 +224,7 @@ async def handle_message(update: Update, context):
             response = "📚 Danh sách từ:\n\n"
             for w, item in words.items():
                 response += f"• {w} : {item.get('meaning_vi')}\n"
-            await update.message.reply_text(f'{response}\n "Bạn muốn xem chi tiết từ nào?")
+            await update.message.reply_text(f"{response}\n Bạn muốn xem chi tiết từ nào?")
             USER_STATES[chat_id] = {"mode": "list_detail"}
             return
 

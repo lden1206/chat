@@ -1,13 +1,14 @@
 from flask import Flask, request
+from zalo_bot import Bot, Update
+from zalo_bot.ext import Dispatcher, MessageHandler, filters
 import os
 import json
 import difflib
 import re
 import random
+import asyncio
 
-from zalo_bot import Bot, Update
-from zalo_bot.ext import Dispatcher, MessageHandler, filters
-
+asyncio.get_event_loop()
 app = Flask(__name__)
 
 # ================= CONFIG =================
@@ -101,18 +102,10 @@ def generate_quiz(words_dict):
 
 # ================= HANDLE MESSAGE =================
 async def handle_message(update: Update, context):
-    if not update.message:
-        return
-
-    chat_id = update.message.chat.id
-    
-    if update.message.sticker:
-        await bot.send_sticker(chat_id, "b5d785f8b9bd50e309ac")
-        return
-
-    if not update.message.text:
+    if not update.message or not update.message.text:
         return
         
+    chat_id = update.message.chat.id
     raw = update.message.text
     text = norm_text(raw)
     state = USER_STATES.get(chat_id, {})
@@ -138,7 +131,6 @@ async def handle_message(update: Update, context):
                 )
             else:
                 await update.message.reply_text("Không tìm thấy dữ liệu bài này.")
-    
             return
         else:
             await update.message.reply_text("Vui lòng nhập đúng tên sách (TACK1/TACK2/TACKCB3/TACKCB4)")
@@ -172,14 +164,17 @@ async def handle_message(update: Update, context):
     # ===== QUIZ ANSWER =====
     if state.get("mode") == "quiz_answer":
         if text == state["correct"]:
-            await update.message.reply_action('typing')
-            await bot.send_sticker(chat_id, random.choice(dung))
+            try:
+                await bot.send_sticker(chat_id, random.choice(dung))
+            except Exception as e:
+                print("Sticker error:", e)
         else:
-            await bot.send_sticker(chat_id, random.choice(sai))
-            await update.message.reply_action('typing')
+            try:
+                await bot.send_sticker(chat_id, random.choice(sai))
+            except Exception as e:
+                print("Sticker error:", e)
             await update.message.reply_text(f"❌ Đáp án đúng: {state['correct'].upper()}")
 
-        await update.message.reply_action('typing')
         await update.message.reply_text("Bạn có muốn chơi tiếp không? (có/không)")
         state["mode"] = "quiz_continue"
         USER_STATES[chat_id] = state
@@ -194,27 +189,28 @@ async def handle_message(update: Update, context):
                 "correct": correct,
                 "words": state["words"]
             }
-            await update.message.reply_action('typing')
             await update.message.reply_text(question)
         else:
             USER_STATES.pop(chat_id, None)
-            await update.message.reply_action('typing')
-            await bot.send_sticker(chat_id, random.choice(ok))
+            try:
+                await bot.send_sticker(chat_id, random.choice(ok))
+            except Exception as e:
+                print("Sticker error:", e)
         return
 
     # ===== LIST DETAIL =====
     if state.get("mode") == "list_detail":
         if text in MECHANICAL_DICT:
-            await update.message.reply_action('typing')
             await update.message.reply_text(format_word_response(text, MECHANICAL_DICT[text]))
             img = MECHANICAL_DICT[text].get('img_url', "")
             if img and img.startswith("http"):
-                await update.message.reply_action('sending_photo')
-                await bot.send_photo(update.message.chat.id, "", img)
+                try:
+                    await bot.send_photo(chat_id, img)
+                except Exception as e:
+                    print("Send photo error:", e)
         else:
             suggestions = difflib.get_close_matches(text, DICT_KEYS, n=5, cutoff=0.8)
             if suggestions:
-                await update.message.reply_action('typing')
                 await update.message.reply_text("Bạn có muốn tra:\n" + "\n".join([f"• {s}" for s in suggestions]))
             else:
                 await update.message.reply_text("Từ không tồn tại.")
@@ -228,9 +224,7 @@ async def handle_message(update: Update, context):
             response = "📚 Danh sách từ:\n\n"
             for w, item in words.items():
                 response += f"• {w} : {item.get('meaning_vi')}\n"
-            await update.message.reply_text(response)
-            await update.message.reply_text("Bạn muốn xem chi tiết từ nào?")
-            await bot.send_sticker(chat_id, random.choice(hoicham))
+            await update.message.reply_text(f'{response}\n "Bạn muốn xem chi tiết từ nào?")
             USER_STATES[chat_id] = {"mode": "list_detail"}
             return
 
@@ -246,7 +240,11 @@ async def handle_message(update: Update, context):
 
     # ===== CHECK GRETTING =====
     if text in ["hi", "/-strong", "alo", "alu", "aloo", "alooo", "helo", "hello", "chào bot", "chào", "bot ơi", "hii", "hiii", "hiiii", "hiiiii", "hiiiiiii", "heloo", "helooo", "helooooo", "heloooo", "helloo", "hellooo", "hellooooo", "helloooo"]:
-        await bot.send_sticker(chat_id, random.choice(hi))
+        try:
+            await bot.send_sticker(chat_id, random.choice(hi))
+        except Exception as e:
+            print("Sticker error:", e)
+        await update.message.reply_text("Vui lòng nhập từ hoặc tra theo cú pháp: Sách...(TACKCB3/TACKCB4/TACK1/TACK2) Bài...(1-8)")
         return
             
     # ===== 1. TRA TỪ =====
@@ -255,8 +253,10 @@ async def handle_message(update: Update, context):
         await update.message.reply_text(format_word_response(text, MECHANICAL_DICT[text]))
         img = MECHANICAL_DICT[text].get('img_url', "")
         if img and img.startswith("http"):
-            await update.message.reply_action('sending_photo')
-            await bot.send_photo(chat_id, "", img)
+            try:
+                await bot.send_photo(chat_id, img)
+            except Exception as e:
+                print("Send photo error:", e)
         return
 
             # ===== 2. SUGGESTION =====
@@ -298,7 +298,6 @@ async def handle_message(update: Update, context):
     
         # Nếu có suggestion thì trả suggestion
         else:
-            await update.message.reply_action('typing')
             await update.message.reply_text(
                 f"❌ Không tìm thấy '{raw}'.\n\n"
                 "💡 Có thể bạn muốn tìm:\n" +
@@ -307,14 +306,12 @@ async def handle_message(update: Update, context):
             return
     
         # ===== NOT FOUND =====
-        await update.message.reply_action('typing')
         await update.message.reply_text(
             f"Xin lỗi, mình chưa có từ '{raw}'.\n"
-            "Vui lòng nhập từ khác hoặc tra theo cú pháp: SÁCH ...(TACK1/TACK2/TACKCB3/TACKCB4) BÀI ...(1-8)"
-        )
+            "Vui lòng nhập từ khác hoặc tra theo cú pháp: SÁCH ...(TACK1/TACK2/TACKCB3/TACKCB4) BÀI ...(1-8)")
 
     # --- THIẾT LẬP DISPATCHER ---
-dispatcher = Dispatcher(bot, None, workers=8)
+dispatcher = Dispatcher(bot, None, workers=0)
 dispatcher.add_handler(MessageHandler(filters.TEXT, handle_message))
 
 @app.route("/")
@@ -327,21 +324,16 @@ def webhook():
     if not payload:
         return "No payload", 400
 
-    data = payload.get("result") or payload
-    update = Update.de_json(data, bot)
+    try:
+        data = payload.get("result") or payload
+        update = Update.de_json(data, bot)
 
-    # ✅ CHẠY SYNC, KHÔNG TẠO EVENT LOOP, KHÔNG NEST_ASYNCIO
-    # Tùy version thư viện, 1 trong các cách dưới sẽ tồn tại:
-    if hasattr(dispatcher, "process_update_sync"):
-        dispatcher.process_update_sync(update)
-    elif hasattr(dispatcher, "application") and hasattr(dispatcher.application, "process_update_sync"):
-        dispatcher.application.process_update_sync(update)
-    else:
-        # fallback cuối cùng nếu thư viện chỉ có async
-        import asyncio
-        asyncio.run(dispatcher.process_update(update))
+        dispatcher.process_update(update)
 
-    return "ok", 200
+        return "ok", 200
+    except Exception as e:
+        print("WEBHOOK ERROR:", e)
+        return "error", 500
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "10000"))

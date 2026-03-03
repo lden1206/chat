@@ -203,7 +203,7 @@ async def handle_message(update: Update, context):
             img = MECHANICAL_DICT[text].get('img_url', "")
             if img and img.startswith("http"):
                 try:
-                    await bot.send_photo(chat_id, img)
+                    await bot.send_photo(chat_id, "", img)
                 except Exception as e:
                     print("Send photo error:", e)
         else:
@@ -252,7 +252,7 @@ async def handle_message(update: Update, context):
         img = MECHANICAL_DICT[text].get('img_url', "")
         if img and img.startswith("http"):
             try:
-                await bot.send_photo(chat_id, img)
+                await bot.send_photo(chat_id, "", img)
             except Exception as e:
                 print("Send photo error:", e)
         return
@@ -270,7 +270,6 @@ async def handle_message(update: Update, context):
                 words = get_words(book, lesson)
                 if words:
                     USER_STATES[chat_id] = {"mode": "menu", "words": words}
-                    await update.message.reply_action('typing')
                     await update.message.reply_text(
                         f"📚 Sách {book.upper()} - Bài {lesson}\n\n"
                         "1️⃣ Liệt kê từ\n"

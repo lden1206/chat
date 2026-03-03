@@ -6,9 +6,7 @@ import json
 import difflib
 import re
 import random
-import asyncio
 
-asyncio.get_event_loop()
 app = Flask(__name__)
 
 # ================= CONFIG =================

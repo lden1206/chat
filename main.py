@@ -93,6 +93,7 @@ def generate_quiz(words_dict):
                 f"B. {options[1].lower()}\n"
                 f"C. {options[2].lower()}\n"
                 f"D. {options[3].lower()}\n\n"
+                "👉 Trả lời A/B/C/D"
                 )
 
     return question, correct_label, word
@@ -241,8 +242,8 @@ async def handle_message(update: Update, context):
                     f"A. {options[0]}\n"
                     f"B. {options[1]}\n"
                     f"C. {options[2]}\n"
-                    f"D. {options[3]}\n\n"
-                    "👉 Trả lời A/B/C/D")
+                    f"D. {options[3]}\n"
+                    )
         
         correct = correct_label
     

@@ -53,7 +53,7 @@ def format_word_response(word, item):
             f"🔊 {item.get('ipa','')} - {audio}\n"
             f"Ví dụ:\n"
             f"🇬🇧 {item.get('example_en','')}\n"
-            f"🇻🇳 {item.get('example_vi','')}\n\n"
+            f"🇻🇳 {item.get('example_vi','')}\n"
             f"(📚 Bài {item.get('lesson')} - Sách {item.get('book')})")
 
 # ================= BOOK LESSON =================
@@ -69,11 +69,10 @@ def extract_book_lesson(text):
     return book, lesson
 
 def get_words(book, lesson):
-    result = {}
-    for k, v in MECHANICAL_DICT.items():
-        if str(v.get("book")).lower() == book and str(v.get("lesson")) == lesson:
-            result[k] = v
-    return result
+    return dict(sorted(
+        (k, v) for k, v in MECHANICAL_DICT.items()
+        if str(v.get("book")).lower() == book and str(v.get("lesson")) == lesson
+    ))
 
 # ================= QUIZ =================
 def generate_quiz(words_dict):
@@ -242,7 +241,7 @@ async def handle_message(update: Update, context):
             await bot.send_sticker(chat_id, random.choice(hi))
         except Exception as e:
             print("Sticker error:", e)
-        await update.message.reply_text("Vui lòng nhập từ hoặc tra theo cú pháp: Sách...(TACKCB3/TACKCB4/TACK1/TACK2) Bài...(1-8)")
+        await update.message.reply_text("Vui lòng nhập từ hoặc cú pháp [Sách...(TACKCB3/TACKCB4/TACK1/TACK2) Bài...(1-8)] để tra từ vựng và làm quiz")
         return
             
     # ===== 1. TRA TỪ =====

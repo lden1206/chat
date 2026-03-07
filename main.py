@@ -304,7 +304,7 @@ async def handle_message(update: Update, context):
         # ===== NOT FOUND =====
         await update.message.reply_text(
             f"Xin lỗi, mình chưa có từ '{raw}'.\n"
-            "Vui lòng nhập từ khác hoặc tra theo cú pháp: SÁCH ...(TACK1/TACK2/TACKCB3/TACKCB4) BÀI ...(1-8)")
+            "Vui lòng nhập từ hoặc cú pháp [Sách...(TACKCB3/TACKCB4/TACK1/TACK2) Bài...(1-8)] để tra từ vựng và làm quiz")
 
     # --- THIẾT LẬP DISPATCHER ---
 dispatcher = Dispatcher(bot, None, workers=0)

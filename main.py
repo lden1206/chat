@@ -95,7 +95,7 @@ def generate_quiz(words_dict):
                 f"D. {options[3].lower()}\n\n"
                 "👉 Trả lời A/B/C/D")
 
-    return question, correct_label
+    return question, correct_label, word
 
 # ================= HANDLE MESSAGE =================
 async def handle_message(update: Update, context):
@@ -107,6 +107,35 @@ async def handle_message(update: Update, context):
     text = norm_text(raw)
     state = USER_STATES.get(chat_id, {})
 
+    # ===== STOP QUIZ =====
+    if text in ["stop", "dừng", "quit"]:
+        if state.get("mode") == "quiz_answer":
+            score = state.get("score", 0)
+            total = state.get("total", 0)
+    
+            accuracy = round((score / total) * 100, 1) if total > 0 else 0
+
+            wrong_words = state.get("wrong_words", [])
+
+            wrong_list = ""
+            if wrong_words:
+                review = []
+                for w in wrong_words:
+                    meaning = state["words"][w]["meaning_vi"]
+                    review.append(f"• {w} — {meaning}")
+    
+                wrong_list = "\n\n📚 Từ cần ôn lại:\n" + "\n".join(review)
+            
+            USER_STATES.pop(chat_id, None)
+            
+            await update.message.reply_text(
+                f"🛑 Đã dừng quiz.\n\n"
+                f"📊 Điểm hiện tại: {score}/{total}\n"
+                f"🎯 Accuracy: {accuracy}%"
+                f"{wrong_list}"
+            )
+            return
+            
         # ===== WAITING BOOK =====
     if state.get("mode") == "waiting_book":
         book = None
@@ -157,42 +186,62 @@ async def handle_message(update: Update, context):
             return
         
     img = None
-
-    # ===== QUIZ ANSWER =====
+    cor = ["Đúng rùiii", "Bạn giỏi quá!", "Chuẩn không cần chỉnh!", "Excellent!", "Well done!", "Perfect!", "Bingo"]
+    
+   # ===== QUIZ ANSWER =====
     if state.get("mode") == "quiz_answer":
+        score = state["score"]
+        total = state["total"] + 1
+    
         if text == state["correct"]:
-            try:
-                await bot.send_sticker(chat_id, random.choice(dung))
-            except Exception as e:
-                print("Sticker error:", e)
+            score += 1
+            await bot.send_sticker(chat_id, random.choice(dung))
+            await update.message.reply_text(random.choice(cor))
         else:
-            try:
-                await bot.send_sticker(chat_id, random.choice(sai))
-            except Exception as e:
-                print("Sticker error:", e)
-            await update.message.reply_text(f"❌ Đáp án đúng: {state['correct'].upper()}")
-
-        await update.message.reply_text("Bạn có muốn chơi tiếp không? (có/không)")
-        state["mode"] = "quiz_continue"
-        USER_STATES[chat_id] = state
-        return
-
-    # ===== QUIZ CONTINUE =====
-    if state.get("mode") == "quiz_continue":
-        if "có" in text:
-            question, correct = generate_quiz(state["words"])
-            USER_STATES[chat_id] = {
-                "mode": "quiz_answer",
-                "correct": correct,
-                "words": state["words"]
-            }
-            await update.message.reply_text(question)
-        else:
+            state["wrong_words"].append(state["current_word"])
+            await bot.send_sticker(chat_id, random.choice(sai))
+            await update.message.reply_text(f"Sai rùi ❌ Đáp án đúng là {state['correct'].upper()}")
+    
+        pool = state["pool"]
+        if not pool:
+            accuracy = round((score / total) * 100, 1)
+            wrong_words = state["wrong_words"]
+            wrong_list = ""
+            if wrong_words:
+                review = []
+                for w in wrong_words:
+                    meaning = state["words"][w]["meaning_vi"]
+                    review.append(f"• {w} — {meaning}")
+                wrong_list = "\n\n📚 Từ cần ôn lại:\n" + "\n".join(review)
+    
             USER_STATES.pop(chat_id, None)
-            try:
-                await bot.send_sticker(chat_id, random.choice(ok))
-            except Exception as e:
-                print("Sticker error:", e)
+    
+            await update.message.reply_text(
+                f"🎉 Hoàn thành quiz!\n\n"
+                f"📊 Điểm: {score}/{total}\n"
+                f"🎯 Accuracy: {accuracy}%"
+                f"{wrong_list}"
+            )
+            return
+    
+        current_word = pool.pop()
+        question, correct, word = generate_quiz({current_word: state["words"][current_word]})
+    
+        USER_STATES[chat_id] = {
+            "mode": "quiz_answer",
+            "words": state["words"],
+            "pool": pool,
+            "current_word": current_word,
+            "correct": correct,
+            "score": score,
+            "total": total,
+            "wrong_words": state["wrong_words"]
+        }
+    
+        await update.message.reply_text(
+            f"📊 Điểm hiện tại: {score}/{total}\n\n{question}"
+        )
+    
         return
 
     # ===== LIST DETAIL =====
@@ -225,15 +274,32 @@ async def handle_message(update: Update, context):
             USER_STATES[chat_id] = {"mode": "list_detail"}
             return
 
-        if text == "2":
-            question, correct = generate_quiz(state["words"])
-            USER_STATES[chat_id] = {
-                "mode": "quiz_answer",
-                "correct": correct,
-                "words": state["words"]
-            }
-            await update.message.reply_text(question)
-            return
+    if text == "2":
+        words_list = list(state["words"].keys())
+        random.shuffle(words_list)
+
+        current_word = words_list.pop()
+    
+        question, correct, word = generate_quiz({current_word: state["words"][current_word]})
+    
+        USER_STATES[chat_id] = {
+            "mode": "quiz_answer",
+            "words": state["words"],
+            "pool": words_list,
+            "current_word": current_word,
+            "correct": correct,
+            "score": 0,
+            "total": 0,
+            "wrong_words": []
+        }
+    
+        await update.message.reply_text(
+            "🎯 Bắt đầu quiz!\n"
+            "Trả lời A/B/C/D\n"
+            "Gõ 'stop' để dừng.\n\n"
+            + question
+        )       
+        return
 
     # ===== CHECK GRETTING =====
     if text in ["hi", "/-strong", "alo", "alu", "aloo", "alooo", "helo", "hello", "chào bot", "chào", "bot ơi", "hii", "hiii", "hiiii", "hiiiii", "hiiiiiii", "heloo", "helooo", "helooooo", "heloooo", "helloo", "hellooo", "hellooooo", "helloooo"]:
@@ -258,7 +324,7 @@ async def handle_message(update: Update, context):
 
             # ===== 2. SUGGESTION =====
     else:
-        suggestions = difflib.get_close_matches(text, DICT_KEYS, n=5, cutoff=0.6)
+        suggestions = difflib.get_close_matches(text, DICT_KEYS, n=5, cutoff=0.8)
     
         # ===== 3. BOOK LESSON (CHỈ CHECK KHI KHÔNG CÓ SUGGESTION) =====
         if not suggestions:
@@ -307,7 +373,7 @@ async def handle_message(update: Update, context):
             "Vui lòng nhập từ hoặc cú pháp [Sách...(TACKCB3/TACKCB4/TACK1/TACK2) Bài...(1-8)] để tra từ vựng và làm quiz")
 
     # --- THIẾT LẬP DISPATCHER ---
-dispatcher = Dispatcher(bot, None, workers=0)
+dispatcher = Dispatcher(bot, None, workers=1)
 dispatcher.add_handler(MessageHandler(filters.TEXT, handle_message))
 
 @app.route("/")
@@ -333,4 +399,4 @@ def webhook():
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "10000"))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, threaded=True)

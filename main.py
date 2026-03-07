@@ -93,7 +93,7 @@ def generate_quiz(words_dict):
                 f"B. {options[1].lower()}\n"
                 f"C. {options[2].lower()}\n"
                 f"D. {options[3].lower()}\n\n"
-                "👉 Trả lời A/B/C/D")
+                )
 
     return question, correct_label, word
 
@@ -237,7 +237,7 @@ async def handle_message(update: Update, context):
         labels = ["a","b","c","d"]
         correct_label = labels[options.index(correct)]
         
-        question = (f"❓ {current_word.lower()} nghĩa là:\n\n"
+        question = (f"❓ {current_word.lower()} nghĩa là:\n"
                     f"A. {options[0]}\n"
                     f"B. {options[1]}\n"
                     f"C. {options[2]}\n"
@@ -274,7 +274,7 @@ async def handle_message(update: Update, context):
                 except Exception as e:
                     print("Send photo error:", e)
         else:
-            suggestions = difflib.get_close_matches(text, DICT_KEYS, n=5, cutoff=0.8)
+            suggestions = difflib.get_close_matches(text, DICT_KEYS, n=5, cutoff=0.75)
             if suggestions:
                 await update.message.reply_text("Bạn có muốn tra:\n" + "\n".join([f"• {s}" for s in suggestions]))
             else:
@@ -343,7 +343,7 @@ async def handle_message(update: Update, context):
 
             # ===== 2. SUGGESTION =====
     else:
-        suggestions = difflib.get_close_matches(text, DICT_KEYS, n=5, cutoff=0.8)
+        suggestions = difflib.get_close_matches(text, DICT_KEYS, n=5, cutoff=0.75)
     
         # ===== 3. BOOK LESSON (CHỈ CHECK KHI KHÔNG CÓ SUGGESTION) =====
         if not suggestions:

@@ -225,7 +225,26 @@ async def handle_message(update: Update, context):
             return
     
         current_word = pool.pop()
-        question, correct, word = generate_quiz({current_word: state["words"][current_word]})
+
+        correct = state["words"][current_word]["meaning_vi"]
+        
+        lesson_meanings = [v["meaning_vi"] for v in state["words"].values()]
+        wrong = random.sample([m for m in lesson_meanings if m != correct],3)
+        
+        options = wrong + [correct]
+        random.shuffle(options)
+        
+        labels = ["a","b","c","d"]
+        correct_label = labels[options.index(correct)]
+        
+        question = (f"❓ {current_word.lower()} nghĩa là:\n\n"
+                    f"A. {options[0]}\n"
+                    f"B. {options[1]}\n"
+                    f"C. {options[2]}\n"
+                    f"D. {options[3]}\n\n"
+                    "👉 Trả lời A/B/C/D")
+        
+        correct = correct_label
     
         USER_STATES[chat_id] = {
             "mode": "quiz_answer",
@@ -277,16 +296,16 @@ async def handle_message(update: Update, context):
     if text == "2":
         words_list = list(state["words"].keys())
         random.shuffle(words_list)
-
-        current_word = words_list.pop()
     
-        question, correct, word = generate_quiz({current_word: state["words"][current_word]})
+        question, correct, word = generate_quiz(state["words"])
+    
+        words_list.remove(word)
     
         USER_STATES[chat_id] = {
             "mode": "quiz_answer",
             "words": state["words"],
             "pool": words_list,
-            "current_word": current_word,
+            "current_word": word,
             "correct": correct,
             "score": 0,
             "total": 0,
@@ -298,7 +317,7 @@ async def handle_message(update: Update, context):
             "Trả lời A/B/C/D\n"
             "Gõ 'stop' để dừng.\n\n"
             + question
-        )       
+        )
         return
 
     # ===== CHECK GRETTING =====

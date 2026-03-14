@@ -54,7 +54,7 @@ def format_word_response(word, item):
             f"Ví dụ:\n"
             f"🇬🇧 {item.get('example_en','')}\n"
             f"🇻🇳 {item.get('example_vi','')}\n"
-            f"(📚 Bài {item.get('lesson')} - Sách {item.get('book')})")
+            f"(📚 Nguồn: Bài {item.get('lesson')} - Sách {item.get('book')})")
 
 # ================= BOOK LESSON =================
 def extract_book_lesson(text):
